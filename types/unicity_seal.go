@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/alphabill-org/alphabill-go-base/crypto"
-	abhash "github.com/alphabill-org/alphabill-go-base/hash"
-	"github.com/alphabill-org/alphabill-go-base/types/hex"
+	"github.com/unicitynetwork/bft-go-base/crypto"
+	abhash "github.com/unicitynetwork/bft-go-base/hash"
+	"github.com/unicitynetwork/bft-go-base/types/hex"
 )
 
 // GenesisTime min timestamp Thursday, April 20, 2023 6:11:24 AM GMT+00:00
@@ -28,7 +28,7 @@ type SignatureMap = map[string]hex.Bytes
 
 type UnicitySeal struct {
 	_                    struct{}     `cbor:",toarray"`
-	Version              ABVersion    `json:"version"`
+	Version              Version      `json:"version"`
 	NetworkID            NetworkID    `json:"network"`
 	RootChainRoundNumber uint64       `json:"rootChainRoundNumber"`
 	Epoch                uint64       `json:"epoch"`        // Root Chain Epoch number
@@ -44,7 +44,7 @@ func NewTimestamp() uint64 {
 	return uint64(time.Now().Unix()) /* #nosec G115 its unlikely that Unix time exceeds uint64 */
 }
 
-func (x *UnicitySeal) GetVersion() ABVersion {
+func (x *UnicitySeal) GetVersion() Version {
 	if x != nil && x.Version > 0 {
 		return x.Version
 	}

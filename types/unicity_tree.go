@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/alphabill-org/alphabill-go-base/tree/imt"
+	"github.com/unicitynetwork/bft-go-base/tree/imt"
 )
 
 type UnicityTree struct {

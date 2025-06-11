@@ -3,7 +3,7 @@ package money
 import (
 	"testing"
 
-	"github.com/alphabill-org/alphabill-go-base/types"
+	"github.com/unicitynetwork/bft-go-base/types"
 	"github.com/stretchr/testify/require"
 )
 

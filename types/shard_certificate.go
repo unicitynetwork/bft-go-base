@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"slices"
 
-	abhash "github.com/alphabill-org/alphabill-go-base/hash"
+	abhash "github.com/unicitynetwork/bft-go-base/hash"
 )
 
 type ShardTreeCertificate struct {

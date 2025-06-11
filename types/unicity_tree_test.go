@@ -4,10 +4,10 @@ import (
 	"crypto"
 	"testing"
 
-	abhash "github.com/alphabill-org/alphabill-go-base/hash"
+	abhash "github.com/unicitynetwork/bft-go-base/hash"
 	"github.com/stretchr/testify/require"
 
-	"github.com/alphabill-org/alphabill-go-base/tree/imt"
+	"github.com/unicitynetwork/bft-go-base/tree/imt"
 )
 
 func TestNewUnicityTree(t *testing.T) {

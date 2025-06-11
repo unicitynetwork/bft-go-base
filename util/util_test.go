@@ -152,7 +152,7 @@ func TestStack(t *testing.T) {
 }
 
 func TestIsValidURI(t *testing.T) {
-	require.True(t, IsValidURI("https://alphabill.org"))
+	require.True(t, IsValidURI("https://unicity.network"))
 	require.True(t, IsValidURI("ldap://[2001:db8::7]/c=GB?objectClass?one"))
 	require.True(t, IsValidURI("ftp://ftp.is.co.za/rfc/rfc1808.txt"))
 	require.True(t, IsValidURI("mailto:John.Doe@example.com"))

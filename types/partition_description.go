@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"time"
 
-	abhash "github.com/alphabill-org/alphabill-go-base/hash"
-	"github.com/alphabill-org/alphabill-go-base/types/hex"
+	abhash "github.com/unicitynetwork/bft-go-base/hash"
+	"github.com/unicitynetwork/bft-go-base/types/hex"
 )
 
 var (
@@ -27,7 +27,7 @@ func (std *PartitionType) AddToHasher(h abhash.Hasher) {
 
 type PartitionDescriptionRecord struct {
 	_           struct{}    `cbor:",toarray"`
-	Version     ABVersion   `json:"version"`
+	Version     Version     `json:"version"`
 	NetworkID   NetworkID   `json:"networkId"`
 	PartitionID PartitionID `json:"partitionId"`
 	ShardID     ShardID     `json:"shardId"`
@@ -214,7 +214,7 @@ func (pdr *PartitionDescriptionRecord) ExtractUnitType(id UnitID) (uint32, error
 	return v & mask, nil
 }
 
-func (pdr *PartitionDescriptionRecord) GetVersion() ABVersion {
+func (pdr *PartitionDescriptionRecord) GetVersion() Version {
 	if pdr == nil || pdr.Version == 0 {
 		return 1
 	}

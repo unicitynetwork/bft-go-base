@@ -4,20 +4,20 @@ import (
 	"bytes"
 	"fmt"
 
-	abhash "github.com/alphabill-org/alphabill-go-base/hash"
-	"github.com/alphabill-org/alphabill-go-base/txsystem/fc"
-	"github.com/alphabill-org/alphabill-go-base/types"
-	"github.com/alphabill-org/alphabill-go-base/types/hex"
+	abhash "github.com/unicitynetwork/bft-go-base/hash"
+	"github.com/unicitynetwork/bft-go-base/txsystem/fc"
+	"github.com/unicitynetwork/bft-go-base/types"
+	"github.com/unicitynetwork/bft-go-base/types/hex"
 )
 
 var _ types.UnitData = (*BillData)(nil)
 
 type BillData struct {
-	_              struct{}        `cbor:",toarray"`
-	Version        types.ABVersion `json:"version"`
-	Value          uint64          `json:"value,string"`   // The monetary value of this bill
-	OwnerPredicate hex.Bytes       `json:"ownerPredicate"` // The owner predicate of this bill
-	Counter        uint64          `json:"counter,string"` // The transaction counter of this bill
+	_              struct{}      `cbor:",toarray"`
+	Version        types.Version `json:"version"`
+	Value          uint64        `json:"value,string"`   // The monetary value of this bill
+	OwnerPredicate hex.Bytes     `json:"ownerPredicate"` // The owner predicate of this bill
+	Counter        uint64        `json:"counter,string"` // The transaction counter of this bill
 }
 
 func NewUnitData(unitID types.UnitID, pdr *types.PartitionDescriptionRecord) (types.UnitData, error) {
@@ -63,7 +63,7 @@ func (b *BillData) Owner() []byte {
 	return b.OwnerPredicate
 }
 
-func (b *BillData) GetVersion() types.ABVersion {
+func (b *BillData) GetVersion() types.Version {
 	if b != nil && b.Version != 0 {
 		return b.Version
 	}

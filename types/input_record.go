@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 
-	abhash "github.com/alphabill-org/alphabill-go-base/hash"
-	"github.com/alphabill-org/alphabill-go-base/types/hex"
+	abhash "github.com/unicitynetwork/bft-go-base/hash"
+	"github.com/unicitynetwork/bft-go-base/types/hex"
 )
 
 var (
@@ -17,7 +17,7 @@ var (
 // Shard input record (IR) of a shard of a partition.
 type InputRecord struct {
 	_               struct{}  `cbor:",toarray"`
-	Version         ABVersion `json:"version"`
+	Version         Version   `json:"version"`
 	RoundNumber     uint64    `json:"roundNumber"`              // shard's round number
 	Epoch           uint64    `json:"epoch"`                    // shard’s epoch number
 	PreviousHash    hex.Bytes `json:"previousHash"`             // previously certified state hash
@@ -130,7 +130,7 @@ func (x *InputRecord) String() string {
 		x.Hash, x.PreviousHash, x.BlockHash, x.RoundNumber, x.Epoch, x.SumOfEarnedFees, x.ETHash, x.SummaryValue)
 }
 
-func (x *InputRecord) GetVersion() ABVersion {
+func (x *InputRecord) GetVersion() Version {
 	if x != nil && x.Version > 0 {
 		return x.Version
 	}

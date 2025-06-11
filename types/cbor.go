@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/alphabill-org/alphabill-go-base/types/hex"
+	"github.com/unicitynetwork/bft-go-base/types/hex"
 	"github.com/fxamacker/cbor/v2"
 )
 
@@ -48,7 +48,7 @@ func (c cborHandler) Marshal(v any) ([]byte, error) {
 	return enc.Marshal(v)
 }
 
-func (c cborHandler) MarshalTagged(tag ABTag, arr ...interface{}) ([]byte, error) {
+func (c cborHandler) MarshalTagged(tag CborTag, arr ...interface{}) ([]byte, error) {
 	data, err := c.Marshal(arr)
 	if err != nil {
 		return nil, err
@@ -59,7 +59,7 @@ func (c cborHandler) MarshalTagged(tag ABTag, arr ...interface{}) ([]byte, error
 	})
 }
 
-func (c cborHandler) MarshalTaggedValue(tag ABTag, v any) ([]byte, error) {
+func (c cborHandler) MarshalTaggedValue(tag CborTag, v any) ([]byte, error) {
 	data, err := c.Marshal(v)
 	if err != nil {
 		return nil, err
@@ -74,7 +74,7 @@ func (c cborHandler) Unmarshal(data []byte, v any) error {
 	return cbor.Unmarshal(data, v)
 }
 
-func (c cborHandler) UnmarshalTagged(data []byte) (ABTag, []interface{}, error) {
+func (c cborHandler) UnmarshalTagged(data []byte) (CborTag, []interface{}, error) {
 	var raw cbor.RawTag
 	if err := c.Unmarshal(data, &raw); err != nil {
 		return 0, nil, err
@@ -86,7 +86,7 @@ func (c cborHandler) UnmarshalTagged(data []byte) (ABTag, []interface{}, error) 
 	return raw.Number, arr, nil
 }
 
-func (c cborHandler) UnmarshalTaggedValue(tag ABTag, data []byte, v any) error {
+func (c cborHandler) UnmarshalTaggedValue(tag CborTag, data []byte, v any) error {
 	var raw cbor.RawTag
 	if err := c.Unmarshal(data, &raw); err != nil {
 		return err

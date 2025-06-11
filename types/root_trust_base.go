@@ -8,9 +8,9 @@ import (
 	"slices"
 	"sync"
 
-	abcrypto "github.com/alphabill-org/alphabill-go-base/crypto"
-	abhash "github.com/alphabill-org/alphabill-go-base/hash"
-	"github.com/alphabill-org/alphabill-go-base/types/hex"
+	abcrypto "github.com/unicitynetwork/bft-go-base/crypto"
+	abhash "github.com/unicitynetwork/bft-go-base/hash"
+	"github.com/unicitynetwork/bft-go-base/types/hex"
 )
 
 type (
@@ -25,12 +25,12 @@ type (
 
 	RootTrustBaseV1 struct {
 		_                 struct{}             `cbor:",toarray"`
-		Version           ABVersion            `json:"version"`
+		Version           Version              `json:"version"`
 		NetworkID         NetworkID            `json:"networkId"`
 		Epoch             uint64               `json:"epoch"`             // current epoch number
 		EpochStartRound   uint64               `json:"epochStartRound"`   // root chain round number when the epoch begins
 		RootNodes         []*NodeInfo          `json:"rootNodes"`         // list of all root nodes for the current epoch
-		QuorumThreshold   uint64               `json:"quorumThreshold"`   // amount of alpha required to reach consensus, currently each node gets equal amount of voting power i.e. +1 for each node
+		QuorumThreshold   uint64               `json:"quorumThreshold"`   // amount of coins required to reach consensus, currently each node gets equal amount of voting power i.e. +1 for each node
 		StateHash         hex.Bytes            `json:"stateHash"`         // unicity tree root hash
 		ChangeRecordHash  hex.Bytes            `json:"changeRecordHash"`  // epoch change request hash
 		PreviousEntryHash hex.Bytes            `json:"previousEntryHash"` // previous trust base entry hash
@@ -41,7 +41,7 @@ type (
 		_      struct{}  `cbor:",toarray"`
 		NodeID string    `json:"nodeId"` // node identifier
 		SigKey hex.Bytes `json:"sigKey"` // signing key of the node
-		Stake  uint64    `json:"stake"`  // amount of staked alpha for this node
+		Stake  uint64    `json:"stake"`  // amount of staked coins for this node
 
 		// cached signature verifier; private fields are ignored in JSON and CBOR encodings
 		sigVerifier     abcrypto.Verifier
@@ -228,7 +228,7 @@ func (r *RootTrustBaseV1) GetRootNodes() []*NodeInfo {
 	return r.RootNodes
 }
 
-func (r *RootTrustBaseV1) GetVersion() ABVersion {
+func (r *RootTrustBaseV1) GetVersion() Version {
 	if r == nil || r.Version == 0 {
 		return 1
 	}

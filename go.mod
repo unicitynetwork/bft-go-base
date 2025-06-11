@@ -1,4 +1,4 @@
-module github.com/alphabill-org/alphabill-go-base
+module github.com/unicitynetwork/bft-go-base
 
 go 1.24
 

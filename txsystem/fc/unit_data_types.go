@@ -3,9 +3,9 @@ package fc
 import (
 	"bytes"
 
-	abhash "github.com/alphabill-org/alphabill-go-base/hash"
-	"github.com/alphabill-org/alphabill-go-base/types"
-	"github.com/alphabill-org/alphabill-go-base/types/hex"
+	abhash "github.com/unicitynetwork/bft-go-base/hash"
+	"github.com/unicitynetwork/bft-go-base/types"
+	"github.com/unicitynetwork/bft-go-base/types/hex"
 )
 
 var _ types.UnitData = (*FeeCreditRecord)(nil)
@@ -14,12 +14,12 @@ var _ types.UnitData = (*FeeCreditRecord)(nil)
 // Holds fee credit balance for individual users,
 // not to be confused with fee credit bills which contain aggregate fees for a given partition.
 type FeeCreditRecord struct {
-	_              struct{}        `cbor:",toarray"`
-	Version        types.ABVersion `json:"version"`
-	Balance        uint64          `json:"balance,string"`     // current balance
-	OwnerPredicate hex.Bytes       `json:"ownerPredicate"`     // the owner predicate of this fee credit record
-	Counter        uint64          `json:"counter,string"`     // transaction counter; incremented with each “addFC” or "closeFC" transaction; spending fee credit does not change this value
-	MinLifetime    uint64          `json:"minLifetime,string"` // the earliest round number when this record may be deleted if the balance goes to zero
+	_              struct{}      `cbor:",toarray"`
+	Version        types.Version `json:"version"`
+	Balance        uint64        `json:"balance,string"`     // current balance
+	OwnerPredicate hex.Bytes     `json:"ownerPredicate"`     // the owner predicate of this fee credit record
+	Counter        uint64        `json:"counter,string"`     // transaction counter; incremented with each “addFC” or "closeFC" transaction; spending fee credit does not change this value
+	MinLifetime    uint64        `json:"minLifetime,string"` // the earliest round number when this record may be deleted if the balance goes to zero
 }
 
 func NewFeeCreditRecord(balance uint64, ownerPredicate []byte, minLifetime uint64) *FeeCreditRecord {
@@ -58,7 +58,7 @@ func (b *FeeCreditRecord) Owner() []byte {
 	return b.OwnerPredicate
 }
 
-func (b *FeeCreditRecord) GetVersion() types.ABVersion {
+func (b *FeeCreditRecord) GetVersion() types.Version {
 	if b != nil && b.Version != 0 {
 		return b.Version
 	}

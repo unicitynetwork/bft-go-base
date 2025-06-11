@@ -4,7 +4,7 @@ import (
 	"crypto"
 	"fmt"
 
-	"github.com/alphabill-org/alphabill-go-base/types"
+	"github.com/unicitynetwork/bft-go-base/types"
 )
 
 // billHashData defines the cbor data for calculating new bill ID.

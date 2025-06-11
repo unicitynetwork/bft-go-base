@@ -1,6 +1,6 @@
 package permissioned
 
-import "github.com/alphabill-org/alphabill-go-base/types"
+import "github.com/unicitynetwork/bft-go-base/types"
 
 const (
 	TransactionTypeSetFeeCredit    uint16 = 20

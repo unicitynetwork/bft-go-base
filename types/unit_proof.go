@@ -6,16 +6,16 @@ import (
 	"errors"
 	"fmt"
 
-	abhash "github.com/alphabill-org/alphabill-go-base/hash"
-	"github.com/alphabill-org/alphabill-go-base/tree/mt"
-	"github.com/alphabill-org/alphabill-go-base/types/hex"
-	"github.com/alphabill-org/alphabill-go-base/util"
+	abhash "github.com/unicitynetwork/bft-go-base/hash"
+	"github.com/unicitynetwork/bft-go-base/tree/mt"
+	"github.com/unicitynetwork/bft-go-base/types/hex"
+	"github.com/unicitynetwork/bft-go-base/util"
 )
 
 type (
 	UnitStateProof struct {
 		_                  struct{}       `cbor:",toarray"`
-		Version            ABVersion      `json:"version"`
+		Version            Version        `json:"version"`
 		UnitID             UnitID         `json:"unitId"`
 		UnitValue          uint64         `json:"unitValue,string"` // V0 - data summary of type PD.V
 		UnitLedgerHash     hex.Bytes      `json:"unitLedgerHash"`   // x_ - previous state hash of type H ∪ {⊥}
@@ -228,7 +228,7 @@ func (u *UnitStateProof) IsValid() error {
 	return nil
 }
 
-func (u *UnitStateProof) GetVersion() ABVersion {
+func (u *UnitStateProof) GetVersion() Version {
 	if u != nil && u.Version > 0 {
 		return u.Version
 	}

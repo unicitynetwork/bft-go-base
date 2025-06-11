@@ -8,9 +8,9 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	test "github.com/alphabill-org/alphabill-go-base/testutils"
-	testsig "github.com/alphabill-org/alphabill-go-base/testutils/sig"
-	"github.com/alphabill-org/alphabill-go-base/types/hex"
+	test "github.com/unicitynetwork/bft-go-base/testutils"
+	testsig "github.com/unicitynetwork/bft-go-base/testutils/sig"
+	"github.com/unicitynetwork/bft-go-base/types/hex"
 )
 
 func TestUnicityCertificate_IsValid(t *testing.T) {

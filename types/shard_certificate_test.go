@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	test "github.com/alphabill-org/alphabill-go-base/testutils"
+	test "github.com/unicitynetwork/bft-go-base/testutils"
 )
 
 func Test_CreateShardTree(t *testing.T) {

@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 
-	abhash "github.com/alphabill-org/alphabill-go-base/hash"
-	"github.com/alphabill-org/alphabill-go-base/types/hex"
+	abhash "github.com/unicitynetwork/bft-go-base/hash"
+	"github.com/unicitynetwork/bft-go-base/types/hex"
 )
 
 const (
@@ -23,7 +23,7 @@ var (
 type (
 	TransactionOrder struct {
 		_           struct{} `cbor:",toarray"`
-		Version     ABVersion
+		Version     Version
 		Payload             // the embedded Payload field is "flattened" in CBOR array
 		StateUnlock []byte  // two CBOR data items: [0|1]+[<state lock/rollback predicate input>]
 		AuthProof   RawCBOR // transaction type specific signatures/authorisation proofs
@@ -62,20 +62,20 @@ type (
 
 	StateLockProofSigData struct {
 		_       struct{} `cbor:",toarray"`
-		Version ABVersion
+		Version Version
 		Payload
 	}
 
 	AuthProofSigData struct {
 		_       struct{} `cbor:",toarray"`
-		Version ABVersion
+		Version Version
 		Payload
 		StateUnlock []byte
 	}
 
 	FeeProofSigData struct {
 		_       struct{} `cbor:",toarray"`
-		Version ABVersion
+		Version Version
 		Payload
 		StateUnlock []byte
 		AuthProof   RawCBOR
@@ -224,7 +224,7 @@ func (t *TransactionOrder) ReferenceNumber() []byte {
 	return t.ClientMetadata.GetReferenceNumber()
 }
 
-func (t *TransactionOrder) GetVersion() ABVersion {
+func (t *TransactionOrder) GetVersion() Version {
 	if t == nil || t.Version == 0 {
 		return 1
 	}
