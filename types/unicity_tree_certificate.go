@@ -5,9 +5,9 @@ import (
 	"errors"
 	"fmt"
 
-	abhash "github.com/alphabill-org/alphabill-go-base/hash"
-	"github.com/alphabill-org/alphabill-go-base/tree/imt"
-	"github.com/alphabill-org/alphabill-go-base/types/hex"
+	abhash "github.com/unicitynetwork/bft-go-base/hash"
+	"github.com/unicitynetwork/bft-go-base/tree/imt"
+	"github.com/unicitynetwork/bft-go-base/types/hex"
 )
 
 var (
@@ -18,7 +18,7 @@ var (
 
 type UnicityTreeCertificate struct {
 	_         struct{}    `cbor:",toarray"`
-	Version   ABVersion   `json:"version"`
+	Version   Version     `json:"version"`
 	Partition PartitionID `json:"partitionId"`
 	HashSteps []*PathItem `json:"hashSteps"`
 }
@@ -85,7 +85,7 @@ func (utc *UnicityTreeCertificate) AddToHasher(hasher abhash.Hasher) {
 	hasher.Write(utc)
 }
 
-func (utc *UnicityTreeCertificate) GetVersion() ABVersion {
+func (utc *UnicityTreeCertificate) GetVersion() Version {
 	if utc != nil && utc.Version > 0 {
 		return utc.Version
 	}

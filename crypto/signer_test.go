@@ -3,7 +3,7 @@ package crypto
 import (
 	"testing"
 
-	test "github.com/alphabill-org/alphabill-go-base/testutils"
+	test "github.com/unicitynetwork/bft-go-base/testutils"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )

@@ -5,7 +5,7 @@ import (
 	"encoding/binary"
 	"fmt"
 
-	"github.com/alphabill-org/alphabill-go-base/types/hex"
+	"github.com/unicitynetwork/bft-go-base/types/hex"
 )
 
 const (

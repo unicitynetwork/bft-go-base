@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	abhash "github.com/alphabill-org/alphabill-go-base/hash"
+	abhash "github.com/unicitynetwork/bft-go-base/hash"
 )
 
 var (
@@ -30,7 +30,7 @@ type (
 	// that is added to the block.
 	TransactionRecord struct {
 		_                struct{} `cbor:",toarray"`
-		Version          ABVersion
+		Version          Version
 		TransactionOrder TransactionOrderCBOR
 		ServerMetadata   *ServerMetadata
 	}
@@ -123,7 +123,7 @@ func (t *TransactionRecord) IsValid() error {
 	return nil
 }
 
-func (t *TransactionRecord) GetVersion() ABVersion {
+func (t *TransactionRecord) GetVersion() Version {
 	if t == nil || t.Version == 0 {
 		return 1
 	}

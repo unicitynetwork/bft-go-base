@@ -1,17 +1,17 @@
 package orchestration
 
 import (
-	abhash "github.com/alphabill-org/alphabill-go-base/hash"
-	"github.com/alphabill-org/alphabill-go-base/types"
+	abhash "github.com/unicitynetwork/bft-go-base/hash"
+	"github.com/unicitynetwork/bft-go-base/types"
 )
 
 var _ types.UnitData = (*VarData)(nil)
 
 // VarData Validator Assignment Record Data
 type VarData struct {
-	_           struct{}        `cbor:",toarray"`
-	Version     types.ABVersion `json:"version"`
-	EpochNumber uint64          // epoch number from the validator assignment record
+	_           struct{}      `cbor:",toarray"`
+	Version     types.Version `json:"version"`
+	EpochNumber uint64        // epoch number from the validator assignment record
 }
 
 func (b *VarData) Write(hasher abhash.Hasher) {
@@ -32,7 +32,7 @@ func (b *VarData) Owner() []byte {
 	return nil
 }
 
-func (b *VarData) GetVersion() types.ABVersion {
+func (b *VarData) GetVersion() types.Version {
 	if b != nil && b.Version != 0 {
 		return b.Version
 	}

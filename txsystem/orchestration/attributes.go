@@ -1,6 +1,6 @@
 package orchestration
 
-import "github.com/alphabill-org/alphabill-go-base/types"
+import "github.com/unicitynetwork/bft-go-base/types"
 
 const (
 	PartitionTypeID    types.PartitionTypeID = 4
@@ -25,12 +25,12 @@ type (
 	ValidatorAssignment struct {
 		_          struct{} `cbor:",toarray"`
 		Validators []ValidatorInfo
-		QuorumSize uint64 // total amount of staked Alpha required to reach consensus
+		QuorumSize uint64 // total amount of staked coins required to reach consensus
 	}
 
 	ValidatorInfo struct {
 		_           struct{} `cbor:",toarray"`
 		ValidatorID []byte   // validator public key used to sign validation messages
-		Stake       uint64   // total amount of staked Alpha by the validator
+		Stake       uint64   // total amount of staked coins by the validator
 	}
 )

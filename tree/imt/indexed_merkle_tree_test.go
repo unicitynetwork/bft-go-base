@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"testing"
 
-	abhash "github.com/alphabill-org/alphabill-go-base/hash"
-	"github.com/alphabill-org/alphabill-go-base/util"
+	abhash "github.com/unicitynetwork/bft-go-base/hash"
+	"github.com/unicitynetwork/bft-go-base/util"
 	"github.com/stretchr/testify/require"
 )
 

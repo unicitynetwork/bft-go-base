@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/alphabill-org/alphabill-go-base/types/hex"
+	"github.com/unicitynetwork/bft-go-base/types/hex"
 	"github.com/fxamacker/cbor/v2"
 	"github.com/stretchr/testify/require"
 )

@@ -7,8 +7,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	abhash "github.com/alphabill-org/alphabill-go-base/hash"
-	test "github.com/alphabill-org/alphabill-go-base/testutils"
+	abhash "github.com/unicitynetwork/bft-go-base/hash"
+	test "github.com/unicitynetwork/bft-go-base/testutils"
 )
 
 var ir = &InputRecord{

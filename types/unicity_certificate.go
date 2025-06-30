@@ -6,15 +6,15 @@ import (
 	"errors"
 	"fmt"
 
-	abhash "github.com/alphabill-org/alphabill-go-base/hash"
-	"github.com/alphabill-org/alphabill-go-base/types/hex"
+	abhash "github.com/unicitynetwork/bft-go-base/hash"
+	"github.com/unicitynetwork/bft-go-base/types/hex"
 )
 
 var ErrUnicityCertificateIsNil = errors.New("unicity certificate is nil")
 
 type UnicityCertificate struct {
 	_                      struct{}                `cbor:",toarray"`
-	Version                ABVersion               `json:"version"`
+	Version                Version                 `json:"version"`
 	InputRecord            *InputRecord            `json:"inputRecord"`
 	TRHash                 hex.Bytes               `json:"trHash"` // hash of the TechnicalRecord
 	ShardConfHash          hex.Bytes               `json:"shardConfHash"`
@@ -239,7 +239,7 @@ func (x *UnicityCertificate) IsRepeat(prevUC *UnicityCertificate) (bool, error) 
 	return isRepeat(prevUC, x)
 }
 
-func (x *UnicityCertificate) IsInitial() (bool) {
+func (x *UnicityCertificate) IsInitial() bool {
 	// Initial UC is issued by root chain for shard round 0,
 	// without any certification requests from shard nodes
 	return x.InputRecord.RoundNumber == 0
@@ -258,7 +258,7 @@ func isRepeat(prevUC, newUC *UnicityCertificate) (bool, error) {
 	return eq && prevUC.UnicitySeal.RootChainRoundNumber < newUC.UnicitySeal.RootChainRoundNumber, nil
 }
 
-func (x *UnicityCertificate) GetVersion() ABVersion {
+func (x *UnicityCertificate) GetVersion() Version {
 	if x != nil && x.Version > 0 {
 		return x.Version
 	}

@@ -6,8 +6,8 @@ import (
 	"errors"
 	"fmt"
 
-	abhash "github.com/alphabill-org/alphabill-go-base/hash"
-	"github.com/alphabill-org/alphabill-go-base/tree/mt"
+	abhash "github.com/unicitynetwork/bft-go-base/hash"
+	"github.com/unicitynetwork/bft-go-base/tree/mt"
 )
 
 var (
@@ -18,7 +18,7 @@ type (
 	// TxProof is a transaction execution proof.
 	TxProof struct {
 		_                  struct{} `cbor:",toarray"`
-		Version            ABVersion
+		Version            Version
 		BlockHeaderHash    []byte
 		Chain              []*GenericChainItem
 		UnicityCertificate TaggedCBOR
@@ -155,7 +155,7 @@ func (p *TxProof) IsValid() error {
 	return nil
 }
 
-func (p *TxProof) GetVersion() ABVersion {
+func (p *TxProof) GetVersion() Version {
 	if p != nil && p.Version > 0 {
 		return p.Version
 	}

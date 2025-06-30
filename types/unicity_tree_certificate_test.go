@@ -5,9 +5,9 @@ import (
 	"crypto/sha256"
 	"testing"
 
-	abcrypto "github.com/alphabill-org/alphabill-go-base/crypto"
-	abhash "github.com/alphabill-org/alphabill-go-base/hash"
-	test "github.com/alphabill-org/alphabill-go-base/testutils"
+	abcrypto "github.com/unicitynetwork/bft-go-base/crypto"
+	abhash "github.com/unicitynetwork/bft-go-base/hash"
+	test "github.com/unicitynetwork/bft-go-base/testutils"
 	"github.com/stretchr/testify/require"
 )
 

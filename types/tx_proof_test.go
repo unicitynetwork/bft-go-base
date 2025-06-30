@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	abcrypto "github.com/alphabill-org/alphabill-go-base/crypto"
-	testsig "github.com/alphabill-org/alphabill-go-base/testutils/sig"
+	abcrypto "github.com/unicitynetwork/bft-go-base/crypto"
+	testsig "github.com/unicitynetwork/bft-go-base/testutils/sig"
 	"github.com/stretchr/testify/require"
 )
 

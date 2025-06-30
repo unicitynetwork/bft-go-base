@@ -7,8 +7,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/alphabill-org/alphabill-go-base/predicates"
-	"github.com/alphabill-org/alphabill-go-base/types"
+	"github.com/unicitynetwork/bft-go-base/predicates"
+	"github.com/unicitynetwork/bft-go-base/types"
 )
 
 func Test_templateBytes(t *testing.T) {

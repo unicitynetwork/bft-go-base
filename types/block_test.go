@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	testsig "github.com/alphabill-org/alphabill-go-base/testutils/sig"
-	"github.com/alphabill-org/alphabill-go-base/tree/mt"
+	testsig "github.com/unicitynetwork/bft-go-base/testutils/sig"
+	"github.com/unicitynetwork/bft-go-base/tree/mt"
 	"github.com/stretchr/testify/require"
 )
 

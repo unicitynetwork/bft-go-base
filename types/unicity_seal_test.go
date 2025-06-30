@@ -6,11 +6,11 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	abcrypto "github.com/alphabill-org/alphabill-go-base/crypto"
-	abhash "github.com/alphabill-org/alphabill-go-base/hash"
-	test "github.com/alphabill-org/alphabill-go-base/testutils"
-	testsig "github.com/alphabill-org/alphabill-go-base/testutils/sig"
-	"github.com/alphabill-org/alphabill-go-base/types/hex"
+	abcrypto "github.com/unicitynetwork/bft-go-base/crypto"
+	abhash "github.com/unicitynetwork/bft-go-base/hash"
+	test "github.com/unicitynetwork/bft-go-base/testutils"
+	testsig "github.com/unicitynetwork/bft-go-base/testutils/sig"
+	"github.com/unicitynetwork/bft-go-base/types/hex"
 )
 
 func TestUnicitySeal_IsValid(t *testing.T) {
@@ -219,7 +219,7 @@ func TestUnicitySeal_cbor(t *testing.T) {
 func TestUnicitySeal_forwardCompatibility_notSupported(t *testing.T) {
 	type TestUnicitySealV2 struct {
 		_                    struct{} `cbor:",toarray"`
-		version              ABVersion
+		version              Version
 		RootChainRoundNumber uint64
 		Timestamp            uint64
 		PreviousHash         []byte
@@ -248,12 +248,12 @@ func TestUnicitySeal_forwardCompatibility_notSupported(t *testing.T) {
 func TestUnicitySeal_UnmarshalCBOR(t *testing.T) {
 	t.Run("Valid Version 1", func(t *testing.T) {
 		sigs := SignatureMap{"node id": []byte{5, 1, 9}}
-		data, err := Cbor.MarshalTagged(UnicitySealTag, ABVersion(1), 2, 3, 4, 5, []byte{6}, []byte{7}, sigs)
+		data, err := Cbor.MarshalTagged(UnicitySealTag, Version(1), 2, 3, 4, 5, []byte{6}, []byte{7}, sigs)
 		require.NoError(t, err)
 		seal := UnicitySeal{}
 		err = seal.UnmarshalCBOR(data)
 		require.NoError(t, err)
-		require.Equal(t, ABVersion(1), seal.GetVersion())
+		require.Equal(t, Version(1), seal.GetVersion())
 		require.Equal(t, NetworkID(2), seal.NetworkID)
 		require.Equal(t, uint64(3), seal.RootChainRoundNumber)
 		require.Equal(t, uint64(4), seal.Epoch)
@@ -264,7 +264,7 @@ func TestUnicitySeal_UnmarshalCBOR(t *testing.T) {
 	})
 
 	t.Run("InvalidTag", func(t *testing.T) {
-		data, err := Cbor.MarshalTagged(1000, ABVersion(1), uint64(1), uint64(1), []byte{0xFF}, []byte{0xFF}, nil)
+		data, err := Cbor.MarshalTagged(1000, Version(1), uint64(1), uint64(1), []byte{0xFF}, []byte{0xFF}, nil)
 		require.NoError(t, err)
 		seal := &UnicitySeal{}
 		err = seal.UnmarshalCBOR(data)
@@ -274,14 +274,14 @@ func TestUnicitySeal_UnmarshalCBOR(t *testing.T) {
 	t.Run("Invalid encoding", func(t *testing.T) {
 		// testing that the number of fields is correct according to the version
 		// currently only version 1 is in use, must have 8 fields
-		data, err := Cbor.MarshalTagged(UnicitySealTag, ABVersion(1), 2, 3, []byte{4}, []byte{5})
+		data, err := Cbor.MarshalTagged(UnicitySealTag, Version(1), 2, 3, []byte{4}, []byte{5})
 		require.NoError(t, err)
 		seal := &UnicitySeal{}
 		err = seal.UnmarshalCBOR(data)
 		require.EqualError(t, err, "unsupported UnicitySeal encoding, version 1 with 5 fields")
 
 		// correct number of fields for version 1 but version is set to be 2
-		data, err = Cbor.MarshalTagged(UnicitySealTag, ABVersion(2), 2, 3, 4, 5, []byte{6}, []byte{7}, nil)
+		data, err = Cbor.MarshalTagged(UnicitySealTag, Version(2), 2, 3, 4, 5, []byte{6}, []byte{7}, nil)
 		require.NoError(t, err)
 		err = seal.UnmarshalCBOR(data)
 		require.EqualError(t, err, "unsupported UnicitySeal encoding, version 2 with 8 fields")
@@ -296,7 +296,7 @@ func TestUnicitySeal_UnmarshalCBOR(t *testing.T) {
 	})
 
 	t.Run("NetworkID", func(t *testing.T) {
-		data, err := Cbor.MarshalTagged(UnicitySealTag, ABVersion(1), 1.2, 3, 4, 5, []byte{6}, []byte{7}, nil)
+		data, err := Cbor.MarshalTagged(UnicitySealTag, Version(1), 1.2, 3, 4, 5, []byte{6}, []byte{7}, nil)
 		require.NoError(t, err)
 		seal := &UnicitySeal{}
 		err = seal.UnmarshalCBOR(data)
@@ -304,7 +304,7 @@ func TestUnicitySeal_UnmarshalCBOR(t *testing.T) {
 	})
 
 	t.Run("InvalidRootRoundNumber", func(t *testing.T) {
-		data, err := Cbor.MarshalTagged(UnicitySealTag, ABVersion(1), 2, "3", 4, 5, []byte{6}, []byte{7}, nil)
+		data, err := Cbor.MarshalTagged(UnicitySealTag, Version(1), 2, "3", 4, 5, []byte{6}, []byte{7}, nil)
 		require.NoError(t, err)
 		seal := &UnicitySeal{}
 		err = seal.UnmarshalCBOR(data)
@@ -312,7 +312,7 @@ func TestUnicitySeal_UnmarshalCBOR(t *testing.T) {
 	})
 
 	t.Run("Epoch", func(t *testing.T) {
-		data, err := Cbor.MarshalTagged(UnicitySealTag, ABVersion(1), 2, 3, []byte{4}, 5, []byte{6}, []byte{7}, nil)
+		data, err := Cbor.MarshalTagged(UnicitySealTag, Version(1), 2, 3, []byte{4}, 5, []byte{6}, []byte{7}, nil)
 		require.NoError(t, err)
 		seal := &UnicitySeal{}
 		err = seal.UnmarshalCBOR(data)
@@ -320,7 +320,7 @@ func TestUnicitySeal_UnmarshalCBOR(t *testing.T) {
 	})
 
 	t.Run("InvalidTimestamp", func(t *testing.T) {
-		data, err := Cbor.MarshalTagged(UnicitySealTag, ABVersion(1), 2, 3, 4, nil, []byte{6}, []byte{7}, nil)
+		data, err := Cbor.MarshalTagged(UnicitySealTag, Version(1), 2, 3, 4, nil, []byte{6}, []byte{7}, nil)
 		require.NoError(t, err)
 		seal := &UnicitySeal{}
 		err = seal.UnmarshalCBOR(data)
@@ -329,14 +329,14 @@ func TestUnicitySeal_UnmarshalCBOR(t *testing.T) {
 
 	t.Run("PreviousHash", func(t *testing.T) {
 		// nil is valid
-		data, err := Cbor.MarshalTagged(UnicitySealTag, ABVersion(1), 2, 3, 4, 5, nil, []byte{7}, nil)
+		data, err := Cbor.MarshalTagged(UnicitySealTag, Version(1), 2, 3, 4, 5, nil, []byte{7}, nil)
 		require.NoError(t, err)
 		seal := &UnicitySeal{}
 		require.NoError(t, seal.UnmarshalCBOR(data))
 		require.Nil(t, seal.PreviousHash)
 
 		// PreviousHash is []byte, use string instead
-		data, err = Cbor.MarshalTagged(UnicitySealTag, ABVersion(1), 2, 3, 4, 5, "6", []byte{7}, nil)
+		data, err = Cbor.MarshalTagged(UnicitySealTag, Version(1), 2, 3, 4, 5, "6", []byte{7}, nil)
 		require.NoError(t, err)
 		err = seal.UnmarshalCBOR(data)
 		require.EqualError(t, err, `invalid previous hash, expected byte slice got string`)
@@ -344,14 +344,14 @@ func TestUnicitySeal_UnmarshalCBOR(t *testing.T) {
 
 	t.Run("Hash", func(t *testing.T) {
 		// nil is valid
-		data, err := Cbor.MarshalTagged(UnicitySealTag, ABVersion(1), 2, 3, 4, 5, []byte{6}, nil, nil)
+		data, err := Cbor.MarshalTagged(UnicitySealTag, Version(1), 2, 3, 4, 5, []byte{6}, nil, nil)
 		require.NoError(t, err)
 		seal := &UnicitySeal{}
 		require.NoError(t, seal.UnmarshalCBOR(data))
 		require.Nil(t, seal.Hash)
 
 		// Hash is []byte, use int instead
-		data, err = Cbor.MarshalTagged(UnicitySealTag, ABVersion(1), 2, 3, 4, 5, []byte{6}, 7, nil)
+		data, err = Cbor.MarshalTagged(UnicitySealTag, Version(1), 2, 3, 4, 5, []byte{6}, 7, nil)
 		require.NoError(t, err)
 		err = seal.UnmarshalCBOR(data)
 		require.EqualError(t, err, `invalid hash, expected byte slice got uint64`)
@@ -359,28 +359,28 @@ func TestUnicitySeal_UnmarshalCBOR(t *testing.T) {
 
 	t.Run("Signatures", func(t *testing.T) {
 		// nil is accepted
-		data, err := Cbor.MarshalTagged(UnicitySealTag, ABVersion(1), 2, 3, 4, 5, []byte{6}, []byte{7}, nil)
+		data, err := Cbor.MarshalTagged(UnicitySealTag, Version(1), 2, 3, 4, 5, []byte{6}, []byte{7}, nil)
 		require.NoError(t, err)
 		seal := &UnicitySeal{}
 		require.NoError(t, seal.UnmarshalCBOR(data))
 		require.Nil(t, seal.Signatures)
 
 		// invalid type, slice instead of map
-		data, err = Cbor.MarshalTagged(UnicitySealTag, ABVersion(1), 2, 3, 4, 5, []byte{6}, []byte{7}, []byte{8})
+		data, err = Cbor.MarshalTagged(UnicitySealTag, Version(1), 2, 3, 4, 5, []byte{6}, []byte{7}, []byte{8})
 		require.NoError(t, err)
 		err = seal.UnmarshalCBOR(data)
 		require.EqualError(t, err, `unicity seal: invalid signatures, expected map, got []uint8`)
 
 		// invalid key type
 		signatures := map[any]any{1: []byte{1, 2, 3}}
-		data, err = Cbor.MarshalTagged(UnicitySealTag, ABVersion(1), 2, 3, 4, 5, []byte{6}, []byte{7}, signatures)
+		data, err = Cbor.MarshalTagged(UnicitySealTag, Version(1), 2, 3, 4, 5, []byte{6}, []byte{7}, signatures)
 		require.NoError(t, err)
 		err = seal.UnmarshalCBOR(data)
 		require.EqualError(t, err, `invalid signer ID type: uint64`)
 
 		// invalid value type
 		signatures = map[any]any{"1": "signature"}
-		data, err = Cbor.MarshalTagged(UnicitySealTag, ABVersion(1), 2, 3, 4, 5, []byte{6}, []byte{7}, signatures)
+		data, err = Cbor.MarshalTagged(UnicitySealTag, Version(1), 2, 3, 4, 5, []byte{6}, []byte{7}, signatures)
 		require.NoError(t, err)
 		err = seal.UnmarshalCBOR(data)
 		require.EqualError(t, err, `invalid signature type: string`)

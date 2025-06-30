@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/alphabill-org/alphabill-go-base/crypto"
-	abhash "github.com/alphabill-org/alphabill-go-base/hash"
-	"github.com/alphabill-org/alphabill-go-base/types/hex"
+	"github.com/unicitynetwork/bft-go-base/crypto"
+	abhash "github.com/unicitynetwork/bft-go-base/hash"
+	"github.com/unicitynetwork/bft-go-base/types/hex"
 )
 
 // GenesisTime min timestamp Thursday, April 20, 2023 6:11:24 AM GMT+00:00
@@ -28,7 +28,7 @@ type SignatureMap = map[string]hex.Bytes
 
 type UnicitySeal struct {
 	_                    struct{}     `cbor:",toarray"`
-	Version              ABVersion    `json:"version"`
+	Version              Version      `json:"version"`
 	NetworkID            NetworkID    `json:"network"`
 	RootChainRoundNumber uint64       `json:"rootChainRoundNumber"`
 	Epoch                uint64       `json:"epoch"`        // Root Chain Epoch number
@@ -41,10 +41,10 @@ type UnicitySeal struct {
 // NewTimestamp - returns timestamp in seconds from epoch
 func NewTimestamp() uint64 {
 	// Epoch in seconds
-	return uint64(time.Now().Unix())
+	return uint64(time.Now().Unix()) /* #nosec G115 its unlikely that Unix time exceeds uint64 */
 }
 
-func (x *UnicitySeal) GetVersion() ABVersion {
+func (x *UnicitySeal) GetVersion() Version {
 	if x != nil && x.Version > 0 {
 		return x.Version
 	}
@@ -146,6 +146,9 @@ func (x *UnicitySeal) UnmarshalCBOR(b []byte) (err error) {
 	}
 
 	if id, ok := arr[1].(uint64); ok {
+		if id > uint64(^NetworkID(0)) {
+			return fmt.Errorf("network ID %d exceeds maximum value %d", id, ^NetworkID(0))
+		}
 		x.NetworkID = NetworkID(id)
 	} else {
 		return fmt.Errorf("invalid network ID, expected uint64 got %T", arr[1])

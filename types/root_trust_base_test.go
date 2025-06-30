@@ -5,8 +5,8 @@ import (
 	"strconv"
 	"testing"
 
-	abcrypto "github.com/alphabill-org/alphabill-go-base/crypto"
-	"github.com/alphabill-org/alphabill-go-base/types/hex"
+	abcrypto "github.com/unicitynetwork/bft-go-base/crypto"
+	"github.com/unicitynetwork/bft-go-base/types/hex"
 	"github.com/stretchr/testify/require"
 )
 

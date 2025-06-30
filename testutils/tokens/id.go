@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/alphabill-org/alphabill-go-base/txsystem/tokens"
-	"github.com/alphabill-org/alphabill-go-base/types"
+	"github.com/unicitynetwork/bft-go-base/txsystem/tokens"
+	"github.com/unicitynetwork/bft-go-base/types"
 )
 
 var testPDR = types.PartitionDescriptionRecord{

@@ -3,8 +3,8 @@ package fc
 import (
 	"testing"
 
-	abhash "github.com/alphabill-org/alphabill-go-base/hash"
-	"github.com/alphabill-org/alphabill-go-base/types"
+	abhash "github.com/unicitynetwork/bft-go-base/hash"
+	"github.com/unicitynetwork/bft-go-base/types"
 
 	"github.com/stretchr/testify/require"
 )
