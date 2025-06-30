@@ -107,7 +107,8 @@ func VerifyTxInclusion(txRecordProof *TxRecordProof, tb RootTrustBase, hashAlgor
 		return fmt.Errorf("failed to get transaction order: %w", err)
 	}
 
-	if err := uc.Verify(tb, hashAlgorithm, txo.PartitionID, nil); err != nil {
+	// TODO: actual shardID extracted
+	if err := uc.Verify(tb, hashAlgorithm, txo.PartitionID, ShardID{}, nil); err != nil {
 		return fmt.Errorf("invalid unicity certificate: %w", err)
 	}
 	// h ← plain_tree_output(C, H(P))

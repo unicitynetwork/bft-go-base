@@ -51,8 +51,8 @@ func GenerateUnitID(txo *types.TransactionOrder, shardConf *types.PartitionDescr
 	return nil
 }
 
-func NewUnitData(unitID types.UnitID, pdr *types.PartitionDescriptionRecord) (types.UnitData, error) {
-	typeID, err := pdr.ExtractUnitType(unitID)
+func NewUnitData(unitID types.UnitID, unitTypeExtractor types.UnitTypeExtractor) (types.UnitData, error) {
+	typeID, err := unitTypeExtractor(unitID)
 	if err != nil {
 		return nil, fmt.Errorf("extracting type ID: %w", err)
 	}

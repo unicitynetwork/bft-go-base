@@ -207,7 +207,7 @@ func (t *TxRecordProof) Verify(getTrustBase func(epoch uint64) (RootTrustBase, e
 		return errors.New("invalid UC: missing UnicitySeal")
 	}
 	trustBase, err := getTrustBase(uc.UnicitySeal.Epoch)
-	if err != nil {
+	if err != nil || trustBase == nil {
 		return fmt.Errorf("acquiring trust base: %w", err)
 	}
 	return VerifyTxProof(t, trustBase, crypto.SHA256)

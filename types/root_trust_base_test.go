@@ -72,8 +72,8 @@ func TestNewTrustBaseGenesis(t *testing.T) {
 			},
 			verifyFunc: func(t *testing.T, tb *RootTrustBaseV1) {
 				// verify values
-				require.EqualValues(t, 1, tb.Epoch)
-				require.EqualValues(t, 1, tb.EpochStartRound)
+				require.EqualValues(t, 0, tb.Epoch)
+				require.EqualValues(t, 0, tb.EpochStart)
 				require.Len(t, tb.RootNodes, 3)
 				require.EqualValues(t, 3, tb.QuorumThreshold)
 				require.EqualValues(t, hex.Bytes(nil), tb.StateHash)

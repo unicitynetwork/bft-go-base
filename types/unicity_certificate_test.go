@@ -75,7 +75,7 @@ func TestUnicityCertificate_IsValid(t *testing.T) {
 		require.EqualValues(t, 0, uc.GetRoundNumber())
 		require.EqualValues(t, 0, uc.GetRootRoundNumber())
 		require.Nil(t, uc.GetStateHash())
-		require.ErrorIs(t, uc.Verify(nil, crypto.SHA256, 0, nil), ErrUnicityCertificateIsNil)
+		require.ErrorIs(t, uc.Verify(nil, crypto.SHA256, 0, ShardID{}, nil), ErrUnicityCertificateIsNil)
 	})
 
 	t.Run("invalid input record", func(t *testing.T) {
@@ -209,25 +209,25 @@ func TestUnicityCertificate_Verify(t *testing.T) {
 		}
 	}
 
-	require.NoError(t, validUC(t, sid0, &ir0, trHash0, shardConf0Hash).Verify(tb, crypto.SHA256, shardConf0.PartitionID, shardConf0Hash))
-	require.NoError(t, validUC(t, sid1, &ir1, trHash1, shardConf1Hash).Verify(tb, crypto.SHA256, shardConf0.PartitionID, shardConf1Hash))
+	require.NoError(t, validUC(t, sid0, &ir0, trHash0, shardConf0Hash).Verify(tb, crypto.SHA256, shardConf0.PartitionID, shardConf0.ShardID, shardConf0Hash))
+	require.NoError(t, validUC(t, sid1, &ir1, trHash1, shardConf1Hash).Verify(tb, crypto.SHA256, shardConf0.PartitionID, shardConf0.ShardID, shardConf1Hash))
 
 	t.Run("IsValid", func(t *testing.T) {
 		// check that IsValid is called
 		uc := UnicityCertificate{Version: 1}
-		require.EqualError(t, uc.Verify(nil, crypto.SHA256, 0, nil),
+		require.EqualError(t, uc.Verify(nil, crypto.SHA256, 0, ShardID{}, nil),
 			"invalid unicity certificate: invalid input record: input record is nil")
 	})
 
 	t.Run("tb is nil", func(t *testing.T) {
 		uc := validUC(t, sid0, &ir0, trHash0, shardConf0Hash)
-		require.EqualError(t, uc.Verify(nil, crypto.SHA256, shardConf0.PartitionID, shardConf0Hash), "verifying unicity seal: root node info is missing")
+		require.EqualError(t, uc.Verify(nil, crypto.SHA256, shardConf0.PartitionID, shardConf0.ShardID, shardConf0Hash), "verifying unicity seal: root node info is missing")
 	})
 
 	t.Run("invalid root hash", func(t *testing.T) {
 		uc := validUC(t, sid0, &ir0, trHash0, shardConf0Hash)
 		uc.UnicitySeal.Hash = []byte{1, 2, 3}
-		require.EqualError(t, uc.Verify(tb, crypto.SHA256, shardConf0.PartitionID, shardConf0Hash),
+		require.EqualError(t, uc.Verify(tb, crypto.SHA256, shardConf0.PartitionID, shardConf0.ShardID, shardConf0Hash),
 			"unicity seal hash 010203 does not match with the root hash of the unicity tree F06B596575FAE5F211C9738A657C55A13D06F7E22CE40F02A4682FDA7C1FD44F")
 	})
 }

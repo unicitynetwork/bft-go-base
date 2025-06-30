@@ -16,6 +16,8 @@ import (
 type (
 	RootTrustBase interface {
 		GetNetworkID() NetworkID
+		GetEpoch() uint64
+		GetEpochStart() uint64
 		VerifyQuorumSignatures(data []byte, signatures map[string]hex.Bytes) error
 		VerifySignature(data []byte, sig []byte, nodeID string) (uint64, error)
 		GetQuorumThreshold() uint64
@@ -28,7 +30,7 @@ type (
 		Version           ABVersion            `json:"version"`
 		NetworkID         NetworkID            `json:"networkId"`
 		Epoch             uint64               `json:"epoch"`             // current epoch number
-		EpochStartRound   uint64               `json:"epochStartRound"`   // root chain round number when the epoch begins
+		EpochStart        uint64               `json:"epochStartRound"`   // root chain round number when the epoch begins
 		RootNodes         []*NodeInfo          `json:"rootNodes"`         // list of all root nodes for the current epoch
 		QuorumThreshold   uint64               `json:"quorumThreshold"`   // amount of alpha required to reach consensus, currently each node gets equal amount of voting power i.e. +1 for each node
 		StateHash         hex.Bytes            `json:"stateHash"`         // unicity tree root hash
@@ -51,6 +53,8 @@ type (
 	Option func(c *trustBaseConf)
 
 	trustBaseConf struct {
+		epoch           uint64
+		epochStart      uint64
 		quorumThreshold uint64
 	}
 )
@@ -93,8 +97,8 @@ func NewTrustBaseGenesis(networkID NetworkID, rootNodes []*NodeInfo, opts ...Opt
 	return &RootTrustBaseV1{
 		Version:           1,
 		NetworkID:         networkID,
-		Epoch:             1,
-		EpochStartRound:   1,
+		Epoch:             c.epoch,
+		EpochStart:        c.epochStart,
 		RootNodes:         rootNodes,
 		QuorumThreshold:   c.quorumThreshold,
 		StateHash:         nil,
@@ -108,6 +112,18 @@ func NewTrustBaseGenesis(networkID NetworkID, rootNodes []*NodeInfo, opts ...Opt
 func WithQuorumThreshold(threshold uint64) Option {
 	return func(c *trustBaseConf) {
 		c.quorumThreshold = threshold
+	}
+}
+
+func WithEpoch(epoch uint64) Option {
+	return func(c *trustBaseConf) {
+		c.epoch = epoch
+	}
+}
+
+func WithEpochStart(epochStart uint64) Option {
+	return func(c *trustBaseConf) {
+		c.epochStart = epochStart
 	}
 }
 
@@ -237,6 +253,14 @@ func (r *RootTrustBaseV1) GetVersion() ABVersion {
 
 func (r *RootTrustBaseV1) GetNetworkID() NetworkID {
 	return r.NetworkID
+}
+
+func (r *RootTrustBaseV1) GetEpoch() uint64 {
+	return r.Epoch
+}
+
+func (r *RootTrustBaseV1) GetEpochStart() uint64 {
+	return r.EpochStart
 }
 
 func (r *RootTrustBaseV1) MarshalCBOR() ([]byte, error) {

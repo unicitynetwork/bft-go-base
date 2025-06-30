@@ -51,7 +51,8 @@ func (x *UnicityCertificate) IsValid(partitionID PartitionID, shardConfHash []by
 	return nil
 }
 
-func (x *UnicityCertificate) Verify(tb RootTrustBase, algorithm crypto.Hash, partitionID PartitionID, shardConfHash []byte) error {
+// TODO: verify shardID also
+func (x *UnicityCertificate) Verify(tb RootTrustBase, algorithm crypto.Hash, partitionID PartitionID, shardID ShardID, shardConfHash []byte) error {
 	if err := x.IsValid(partitionID, shardConfHash); err != nil {
 		return fmt.Errorf("invalid unicity certificate: %w", err)
 	}
@@ -143,6 +144,20 @@ func (x *UnicityCertificate) GetPartitionID() PartitionID {
 
 func (x *UnicityCertificate) GetShardID() ShardID {
 	return x.ShardTreeCertificate.Shard
+}
+
+func (x *UnicityCertificate) GetShardEpoch() uint64 {
+	if x != nil && x.InputRecord != nil {
+		return x.InputRecord.Epoch
+	}
+	return 0
+}
+
+func (x *UnicityCertificate) GetRootEpoch() uint64 {
+	if x != nil && x.UnicitySeal != nil {
+		return x.UnicitySeal.Epoch
+	}
+	return 0
 }
 
 // CheckNonEquivocatingCertificates checks if provided certificates are equivocating
