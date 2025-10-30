@@ -15,6 +15,7 @@ import (
 
 type (
 	RootTrustBase interface {
+		GetVersion() Version
 		GetNetworkID() NetworkID
 		GetEpoch() uint64
 		GetEpochStart() uint64
