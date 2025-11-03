@@ -149,7 +149,7 @@ func TestUnicityCertificate_Verify(t *testing.T) {
 	trHash1 := bytes.Repeat([]byte{11}, 32)
 
 	signer, verifier := testsig.CreateSignerAndVerifier(t)
-	tb := NewTrustBase(t, verifier)
+	tb := NewTrustBaseT(t, verifier)
 
 	// must use const timestamp to have deterministic UC hash
 	const curTimestamp uint64 = 1731504540

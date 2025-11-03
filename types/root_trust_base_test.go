@@ -1,13 +1,15 @@
 package types
 
 import (
+	"crypto"
 	"fmt"
 	"strconv"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	abcrypto "github.com/unicitynetwork/bft-go-base/crypto"
 	"github.com/unicitynetwork/bft-go-base/types/hex"
-	"github.com/stretchr/testify/require"
 )
 
 func TestNodeInfo_IsValid(t *testing.T) {
@@ -186,7 +188,7 @@ func TestNewTrustBaseGenesis(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tb, err := NewTrustBaseGenesis(NetworkMainNet, tt.args.nodes, tt.args.opts...)
+			tb, err := NewTrustBase(NetworkMainNet, tt.args.nodes, tt.args.opts...)
 			if tt.wantErrStr != "" {
 				require.ErrorContains(t, err, tt.wantErrStr)
 				require.Nil(t, tb)
@@ -203,7 +205,7 @@ func TestNewTrustBaseGenesis(t *testing.T) {
 
 func TestSignAndVerify(t *testing.T) {
 	keys := genKeys(1)
-	tb, err := NewTrustBaseGenesis(
+	tb, err := NewTrustBase(
 		NetworkMainNet,
 		[]*NodeInfo{&NodeInfo{NodeID: "1", SigKey: keys["1"].publicKey, Stake: 1}},
 	)
@@ -222,7 +224,7 @@ func TestSignAndVerify(t *testing.T) {
 
 func Test_RootTrustBaseV1_CBOR(t *testing.T) {
 	keys := genKeys(3)
-	tb, err := NewTrustBaseGenesis(
+	tb, err := NewTrustBase(
 		NetworkMainNet,
 		[]*NodeInfo{
 			&NodeInfo{NodeID: "1", SigKey: keys["1"].publicKey, Stake: 1},
@@ -287,14 +289,14 @@ func genKeys(count int) map[string]key {
 	return keys
 }
 
-func NewTrustBase(t *testing.T, verifiers ...abcrypto.Verifier) RootTrustBase {
+func NewTrustBaseT(t *testing.T, verifiers ...abcrypto.Verifier) RootTrustBase {
 	var nodes []*NodeInfo
 	for _, v := range verifiers {
 		sigKey, err := v.MarshalPublicKey()
 		require.NoError(t, err)
 		nodes = append(nodes, &NodeInfo{NodeID: "test", SigKey: sigKey, Stake: 1})
 	}
-	tb, err := NewTrustBaseGenesis(NetworkMainNet, nodes)
+	tb, err := NewTrustBase(NetworkMainNet, nodes)
 	require.NoError(t, err)
 	return tb
 }
@@ -306,7 +308,127 @@ func NewTrustBaseFromVerifiers(t *testing.T, verifiers map[string]abcrypto.Verif
 		require.NoError(t, err)
 		nodes = append(nodes, &NodeInfo{NodeID: nodeID, SigKey: sigKey, Stake: 1})
 	}
-	tb, err := NewTrustBaseGenesis(NetworkMainNet, nodes)
+	tb, err := NewTrustBase(NetworkMainNet, nodes)
 	require.NoError(t, err)
 	return tb
+}
+
+func TestRootTrustBaseV1_Verify(t *testing.T) {
+	keys := genKeys(1)
+	node := &NodeInfo{NodeID: "1", SigKey: keys["1"].publicKey, Stake: 1}
+
+	// create trust base for epoch 0
+	tb0, err := NewTrustBase(NetworkLocal, []*NodeInfo{node}, WithEpoch(0), WithEpochStart(5))
+	require.NoError(t, err)
+
+	// calculate trust base hash
+	tb0Hash, err := tb0.Hash(crypto.SHA256)
+	require.NoError(t, err)
+
+	// create trust base for epoch 1
+	tb1, err := NewTrustBase(NetworkLocal, []*NodeInfo{node},
+		WithEpoch(1),
+		WithEpochStart(10),
+		WithPreviousTrustBaseHash(tb0Hash),
+	)
+	require.NoError(t, err)
+
+	tests := []struct {
+		name    string
+		prev    *RootTrustBaseV1
+		curr    *RootTrustBaseV1
+		wantErr string
+	}{
+		{
+			name: "genesis trust base with epoch zero ok",
+			prev: nil,
+			curr: tb0,
+		},
+		{
+			name: "genesis trust base with non-zero epoch nok",
+			prev: nil,
+			curr: func() *RootTrustBaseV1 {
+				g := *tb0
+				g.Epoch = 1
+				return &g
+			}(),
+			wantErr: "genesis trust base epoch must be 0, got 1",
+		},
+		{
+			name: "extend ok",
+			prev: tb0,
+			curr: tb1,
+		},
+		{
+			name: "extend with different network id nok",
+			prev: tb0,
+			curr: func() *RootTrustBaseV1 {
+				b := *tb1
+				b.NetworkID = b.NetworkID + 1
+				return &b
+			}(),
+			wantErr: "invalid network id, got 4 previous 3",
+		},
+		{
+			name: "extend with same epoch nok",
+			prev: tb0,
+			curr: func() *RootTrustBaseV1 {
+				b := *tb1
+				b.Epoch = 0
+				return &b
+			}(),
+			wantErr: "invalid epoch, got 0 previous 0",
+		},
+		{
+			name: "extend with epoch not incremented by 1 nok",
+			prev: tb0,
+			curr: func() *RootTrustBaseV1 {
+				b := *tb1
+				b.Epoch = 2
+				return &b
+			}(),
+			wantErr: "invalid epoch, got 2 previous 0",
+		},
+		{
+			name: "extend with same epoch start nok",
+			prev: tb0,
+			curr: func() *RootTrustBaseV1 {
+				b := *tb1
+				b.EpochStart = 5
+				return &b
+			}(),
+			wantErr: "invalid epoch start, got 5 previous 5",
+		},
+		{
+			name: "extend with smaller epoch start nok",
+			prev: tb0,
+			curr: func() *RootTrustBaseV1 {
+				b := *tb1
+				b.EpochStart = 4
+				return &b
+			}(),
+			wantErr: "invalid epoch start, got 4 previous 5",
+		},
+		{
+			name: "extend with invalid previous hash nok",
+			prev: tb0,
+			curr: func() *RootTrustBaseV1 {
+				b := *tb1
+				b.PreviousEntryHash = []byte{1, 2, 3}
+				return &b
+			}(),
+			wantErr: "previous trust base hash does not match",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.curr.Verify(tt.prev)
+			if tt.wantErr != "" {
+				require.ErrorContains(t, err, tt.wantErr)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
 }

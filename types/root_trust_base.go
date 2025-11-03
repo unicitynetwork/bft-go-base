@@ -1,6 +1,7 @@
 package types
 
 import (
+	"bytes"
 	"cmp"
 	"crypto"
 	"errors"
@@ -37,7 +38,7 @@ type (
 		StateHash         hex.Bytes            `json:"stateHash"`         // unicity tree root hash
 		ChangeRecordHash  hex.Bytes            `json:"changeRecordHash"`  // epoch change request hash
 		PreviousEntryHash hex.Bytes            `json:"previousEntryHash"` // previous trust base entry hash
-		Signatures        map[string]hex.Bytes `json:"signatures"`        // signatures of previous epoch validators, over all fields except for the signatures fields itself
+		Signatures        map[string]hex.Bytes `json:"signatures"`        // signatures of current epoch validators, over all fields except for the signatures fields itself
 	}
 
 	NodeInfo struct {
@@ -54,14 +55,15 @@ type (
 	Option func(c *trustBaseConf)
 
 	trustBaseConf struct {
-		epoch           uint64
-		epochStart      uint64
-		quorumThreshold uint64
+		epoch                 uint64
+		epochStart            uint64
+		quorumThreshold       uint64
+		previousTrustBaseHash hex.Bytes
 	}
 )
 
-// NewTrustBaseGenesis creates new unsigned root trust base with default parameters.
-func NewTrustBaseGenesis(networkID NetworkID, rootNodes []*NodeInfo, opts ...Option) (*RootTrustBaseV1, error) {
+// NewTrustBase creates new unsigned root trust base.
+func NewTrustBase(networkID NetworkID, rootNodes []*NodeInfo, opts ...Option) (*RootTrustBaseV1, error) {
 	if len(rootNodes) == 0 {
 		return nil, errors.New("nodes list is empty")
 	}
@@ -104,7 +106,7 @@ func NewTrustBaseGenesis(networkID NetworkID, rootNodes []*NodeInfo, opts ...Opt
 		QuorumThreshold:   c.quorumThreshold,
 		StateHash:         nil,
 		ChangeRecordHash:  nil,
-		PreviousEntryHash: nil,
+		PreviousEntryHash: c.previousTrustBaseHash,
 		Signatures:        make(map[string]hex.Bytes),
 	}, nil
 }
@@ -125,6 +127,12 @@ func WithEpoch(epoch uint64) Option {
 func WithEpochStart(epochStart uint64) Option {
 	return func(c *trustBaseConf) {
 		c.epochStart = epochStart
+	}
+}
+
+func WithPreviousTrustBaseHash(previousTrustBaseHash hex.Bytes) Option {
+	return func(c *trustBaseConf) {
+		c.previousTrustBaseHash = previousTrustBaseHash
 	}
 }
 
@@ -286,6 +294,42 @@ func (r *RootTrustBaseV1) getRootNode(nodeID string) *NodeInfo {
 	})
 	if found {
 		return r.RootNodes[idx]
+	}
+	return nil
+}
+
+// Verify verifies the trust base
+//
+// Genesis trust base:
+//   - Epoch must be zero.
+//
+// Non-genesis trust base must extend previous trust base:
+//   - The network identifiers must match.
+//   - The epoch number must be strictly greater than the previous epoch number.
+//   - The epoch start round must be strictly greater than the previous epoch start round.
+//   - The hash of the previous trust must match the previousEntryHash.
+func (r *RootTrustBaseV1) Verify(prev *RootTrustBaseV1) error {
+	if prev == nil {
+		if r.Epoch != 0 {
+			return fmt.Errorf("genesis trust base epoch must be 0, got %d", r.Epoch)
+		}
+		return nil
+	}
+	if r.NetworkID != prev.NetworkID {
+		return fmt.Errorf("invalid network id, got %d previous %d", r.NetworkID, prev.NetworkID)
+	}
+	if r.Epoch != prev.Epoch+1 {
+		return fmt.Errorf("invalid epoch, got %d previous %d", r.Epoch, prev.Epoch)
+	}
+	if r.EpochStart <= prev.EpochStart {
+		return fmt.Errorf("invalid epoch start, got %d previous %d", r.EpochStart, prev.EpochStart)
+	}
+	prevHash, err := prev.Hash(crypto.SHA256)
+	if err != nil {
+		return fmt.Errorf("failed to calculate previous trust base hash: %w", err)
+	}
+	if !bytes.Equal(r.PreviousEntryHash, prevHash) {
+		return errors.New("previous trust base hash does not match")
 	}
 	return nil
 }
