@@ -29,16 +29,16 @@ type (
 
 	RootTrustBaseV1 struct {
 		_                 struct{}             `cbor:",toarray"`
-		Version           Version              `json:"version"`
-		NetworkID         NetworkID            `json:"networkId"`
-		Epoch             uint64               `json:"epoch"`             // current epoch number
-		EpochStart        uint64               `json:"epochStartRound"`   // root chain round number when the epoch begins
-		RootNodes         []*NodeInfo          `json:"rootNodes"`         // list of all root nodes for the current epoch
-		QuorumThreshold   uint64               `json:"quorumThreshold"`   // amount of coins required to reach consensus, currently each node gets equal amount of voting power i.e. +1 for each node
-		StateHash         hex.Bytes            `json:"stateHash"`         // unicity tree root hash
-		ChangeRecordHash  hex.Bytes            `json:"changeRecordHash"`  // epoch change request hash
-		PreviousEntryHash hex.Bytes            `json:"previousEntryHash"` // previous trust base entry hash
-		Signatures        map[string]hex.Bytes `json:"signatures"`        // signatures of current epoch validators, over all fields except for the signatures fields itself
+		Version           Version              `json:"version" bson:"version"`
+		NetworkID         NetworkID            `json:"networkId" bson:"networkId"`
+		Epoch             uint64               `json:"epoch" bson:"epoch"`                         // current epoch number
+		EpochStart        uint64               `json:"epochStartRound" bson:"epochStartRound"`     // root chain round number when the epoch begins
+		RootNodes         []*NodeInfo          `json:"rootNodes" bson:"rootNodes"`                 // list of all root nodes for the current epoch
+		QuorumThreshold   uint64               `json:"quorumThreshold" bson:"quorumThreshold"`     // amount of coins required to reach consensus, currently each node gets equal amount of voting power i.e. +1 for each node
+		StateHash         hex.Bytes            `json:"stateHash" bson:"stateHash"`                 // unicity tree root hash
+		ChangeRecordHash  hex.Bytes            `json:"changeRecordHash" bson:"changeRecordHash"`   // epoch change request hash
+		PreviousEntryHash hex.Bytes            `json:"previousEntryHash" bson:"previousEntryHash"` // previous trust base entry hash
+		Signatures        map[string]hex.Bytes `json:"signatures" bson:"signatures"`               // signatures of current epoch validators, over all fields except for the signatures fields itself
 	}
 
 	NodeInfo struct {
