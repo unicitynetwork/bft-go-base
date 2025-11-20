@@ -28,17 +28,18 @@ type (
 	}
 
 	RootTrustBaseV1 struct {
-		_                 struct{}             `cbor:",toarray"`
-		Version           Version              `json:"version" bson:"version"`
-		NetworkID         NetworkID            `json:"networkId" bson:"networkId"`
-		Epoch             uint64               `json:"epoch" bson:"epoch"`                         // current epoch number
-		EpochStart        uint64               `json:"epochStartRound" bson:"epochStartRound"`     // root chain round number when the epoch begins
-		RootNodes         []*NodeInfo          `json:"rootNodes" bson:"rootNodes"`                 // list of all root nodes for the current epoch
-		QuorumThreshold   uint64               `json:"quorumThreshold" bson:"quorumThreshold"`     // amount of coins required to reach consensus, currently each node gets equal amount of voting power i.e. +1 for each node
-		StateHash         hex.Bytes            `json:"stateHash" bson:"stateHash"`                 // unicity tree root hash
-		ChangeRecordHash  hex.Bytes            `json:"changeRecordHash" bson:"changeRecordHash"`   // epoch change request hash
-		PreviousEntryHash hex.Bytes            `json:"previousEntryHash" bson:"previousEntryHash"` // previous trust base entry hash
-		Signatures        map[string]hex.Bytes `json:"signatures" bson:"signatures"`               // signatures of current epoch validators, over all fields except for the signatures fields itself
+		_                       struct{}             `cbor:",toarray"`
+		Version                 Version              `json:"version" bson:"version"`
+		NetworkID               NetworkID            `json:"networkId" bson:"networkId"`
+		Epoch                   uint64               `json:"epoch" bson:"epoch"`                                     // current epoch number
+		EpochStart              uint64               `json:"epochStartRound" bson:"epochStartRound"`                 // root chain round number when the epoch begins
+		RootNodes               []*NodeInfo          `json:"rootNodes" bson:"rootNodes"`                             // list of all root nodes for the current epoch
+		QuorumThreshold         uint64               `json:"quorumThreshold" bson:"quorumThreshold"`                 // amount of coins required to reach consensus, currently each node gets equal amount of voting power i.e. +1 for each node
+		StateHash               hex.Bytes            `json:"stateHash" bson:"stateHash"`                             // unicity tree root hash
+		ChangeRecordHash        hex.Bytes            `json:"changeRecordHash" bson:"changeRecordHash"`               // epoch change request hash
+		PreviousEntryHash       hex.Bytes            `json:"previousEntryHash" bson:"previousEntryHash"`             // previous trust base entry hash
+		Signatures              map[string]hex.Bytes `json:"signatures" bson:"signatures"`                           // signatures of current epoch validators, over all fields except for the signatures fields itself
+		PreviousEpochSignatures map[string]hex.Bytes `json:"previousEpochSignatures" bson:"previousEpochSignatures"` // signatures of previous epoch validators, over all fields except for this field itself
 	}
 
 	NodeInfo struct {
@@ -189,6 +190,29 @@ func (r *RootTrustBaseV1) Sign(nodeID string, signer abcrypto.Signer) error {
 	return nil
 }
 
+// SignPrevious signs the trust base entry, storing the signature to PreviousEpochSignatures map.
+func (r *RootTrustBaseV1) SignPrevious(nodeID string, signer abcrypto.Signer) error {
+	if nodeID == "" {
+		return errors.New("node identifier is empty")
+	}
+	if signer == nil {
+		return errors.New("signer is nil")
+	}
+	sb, err := r.PreviousEpochSigBytes()
+	if err != nil {
+		return err
+	}
+	sig, err := signer.SignBytes(sb)
+	if err != nil {
+		return fmt.Errorf("signing failed: %w", err)
+	}
+	if r.PreviousEpochSignatures == nil {
+		r.PreviousEpochSignatures = make(map[string]hex.Bytes)
+	}
+	r.PreviousEpochSignatures[nodeID] = sig
+	return nil
+}
+
 // Hash hashes the entire structure including the signatures.
 func (r *RootTrustBaseV1) Hash(hashAlgo crypto.Hash) ([]byte, error) {
 	hasher := abhash.New(hashAlgo.New())
@@ -196,9 +220,20 @@ func (r *RootTrustBaseV1) Hash(hashAlgo crypto.Hash) ([]byte, error) {
 	return hasher.Sum()
 }
 
-// SigBytes serializes all fields expect for the signatures field.
+// SigBytes serializes all fields expect for the Signatures and PreviousEpochSignatures fields.
 func (r RootTrustBaseV1) SigBytes() ([]byte, error) {
 	r.Signatures = nil
+	r.PreviousEpochSignatures = nil
+	bs, err := r.MarshalCBOR()
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal root trust base: %w", err)
+	}
+	return bs, nil
+}
+
+// PreviousEpochSigBytes serializes all fields expect for the PreviousEpochSignatures field.
+func (r RootTrustBaseV1) PreviousEpochSigBytes() ([]byte, error) {
+	r.PreviousEpochSignatures = nil
 	bs, err := r.MarshalCBOR()
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal root trust base: %w", err)
@@ -298,7 +333,10 @@ func (r *RootTrustBaseV1) getRootNode(nodeID string) *NodeInfo {
 	return nil
 }
 
-// Verify verifies the trust base
+// Verify verifies the trust base, including the signatures.
+//
+// Common for all trust bases:
+//   - The current epoch signatures must be valid and reach quorum.
 //
 // Genesis trust base:
 //   - Epoch must be zero.
@@ -308,7 +346,17 @@ func (r *RootTrustBaseV1) getRootNode(nodeID string) *NodeInfo {
 //   - The epoch number must be strictly greater than the previous epoch number.
 //   - The epoch start round must be strictly greater than the previous epoch start round.
 //   - The hash of the previous trust must match the previousEntryHash.
+//   - The previous epoch signatures must be valid and reach quorum.
 func (r *RootTrustBaseV1) Verify(prev *RootTrustBaseV1) error {
+	if err := r.IsValid(prev); err != nil {
+		return err
+	}
+	return r.VerifySignatures(prev)
+}
+
+// IsValid verifies the trust base without verifying the signatures.
+// Use VerifySignatures to verify the signatures.
+func (r *RootTrustBaseV1) IsValid(prev *RootTrustBaseV1) error {
 	if prev == nil {
 		if r.Epoch != 0 {
 			return fmt.Errorf("genesis trust base epoch must be 0, got %d", r.Epoch)
@@ -330,6 +378,30 @@ func (r *RootTrustBaseV1) Verify(prev *RootTrustBaseV1) error {
 	}
 	if !bytes.Equal(r.PreviousEntryHash, prevHash) {
 		return errors.New("previous trust base hash does not match")
+	}
+	return nil
+}
+
+// VerifySignatures verifies the trust base is signed by quorum.
+func (r *RootTrustBaseV1) VerifySignatures(prev *RootTrustBaseV1) error {
+	// verify current epoch signatures
+	sigBytes, err := r.SigBytes()
+	if err != nil {
+		return fmt.Errorf("failed to get sig bytes: %w", err)
+	}
+	if err := r.VerifyQuorumSignatures(sigBytes, r.Signatures); err != nil {
+		return fmt.Errorf("failed to verify signatures: %w", err)
+	}
+
+	// verify previous epoch signatures
+	if prev != nil {
+		prevSigBytes, err := r.PreviousEpochSigBytes()
+		if err != nil {
+			return fmt.Errorf("failed to get previous epoch sig bytes: %w", err)
+		}
+		if err := prev.VerifyQuorumSignatures(prevSigBytes, r.PreviousEpochSignatures); err != nil {
+			return fmt.Errorf("failed to verify previous epoch signatures: %w", err)
+		}
 	}
 	return nil
 }
