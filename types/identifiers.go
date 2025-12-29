@@ -31,6 +31,9 @@ type (
 
 	// UnitID is the extended identifier, combining the type and the unit identifiers.
 	UnitID []byte
+
+	// UnitTypeExtractor is a function that extracts unit type from UnitID
+	UnitTypeExtractor func(UnitID) (uint32, error)
 )
 
 func (uid UnitID) Compare(key UnitID) int {
@@ -45,8 +48,8 @@ func (uid UnitID) Eq(id UnitID) bool {
 	return bytes.Equal(uid, id)
 }
 
-func (uid UnitID) TypeMustBe(typeID uint32, pdr *PartitionDescriptionRecord) error {
-	tid, err := pdr.ExtractUnitType(uid)
+func (uid UnitID) TypeMustBe(typeID uint32, unitTypeExtractor UnitTypeExtractor) error {
+	tid, err := unitTypeExtractor(uid)
 	if err != nil {
 		return fmt.Errorf("extracting unit type from unit ID: %w", err)
 	}

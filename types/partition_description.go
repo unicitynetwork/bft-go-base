@@ -115,6 +115,9 @@ func (pdr *PartitionDescriptionRecord) Verify(prev *PartitionDescriptionRecord) 
 		if pdr.NetworkID != prev.NetworkID {
 			return fmt.Errorf("invalid network id, provided %d previous %d", pdr.NetworkID, prev.NetworkID)
 		}
+		if pdr.PartitionTypeID != prev.PartitionTypeID {
+			return fmt.Errorf("invalid partition type id, provided %d previous %d", pdr.PartitionTypeID, prev.PartitionTypeID)
+		}
 		if pdr.PartitionID != prev.PartitionID {
 			return fmt.Errorf("invalid partition id, provided %d previous %d", pdr.PartitionID, prev.PartitionID)
 		}
@@ -137,12 +140,31 @@ func (pdr *PartitionDescriptionRecord) Hash(hashAlgorithm crypto.Hash) ([]byte, 
 	return hasher.Sum()
 }
 
+func (pdr *PartitionDescriptionRecord) GetVersion() Version {
+	if pdr == nil || pdr.Version == 0 {
+		return 1
+	}
+	return pdr.Version
+}
+
 func (pdr *PartitionDescriptionRecord) GetNetworkID() NetworkID {
 	return pdr.NetworkID
 }
 
+func (pdr *PartitionDescriptionRecord) GetPartitionTypeID() PartitionTypeID {
+	return pdr.PartitionTypeID
+}
+
 func (pdr *PartitionDescriptionRecord) GetPartitionID() PartitionID {
 	return pdr.PartitionID
+}
+
+func (pdr *PartitionDescriptionRecord) GetShardID() ShardID {
+	return pdr.ShardID
+}
+
+func (pdr *PartitionDescriptionRecord) GetPartitionParams() map[string]string {
+	return pdr.PartitionParams
 }
 
 /*
@@ -207,18 +229,11 @@ func (pdr *PartitionDescriptionRecord) ExtractUnitType(id UnitID) (uint32, error
 		return 0, fmt.Errorf("expected unit ID length %d bytes, got %d bytes", idLen, len(id))
 	}
 
-	// we relay on the fact that valid PDR has "pdr.UnitIDLen >= 64" ie it's safe to read four bytes
+	// we rely on the fact that valid PDR has "pdr.UnitIDLen >= 64" ie it's safe to read four bytes
 	idx := len(id) - 1
 	v := uint32(id[idx]) | (uint32(id[idx-1]) << 8) | (uint32(id[idx-2]) << 16) | (uint32(id[idx-3]) << 24)
 	mask := uint32(0xFFFFFFFF) >> (32 - pdr.TypeIDLen)
 	return v & mask, nil
-}
-
-func (pdr *PartitionDescriptionRecord) GetVersion() Version {
-	if pdr == nil || pdr.Version == 0 {
-		return 1
-	}
-	return pdr.Version
 }
 
 func (pdr *PartitionDescriptionRecord) MarshalCBOR() ([]byte, error) {
@@ -235,4 +250,13 @@ func (pdr *PartitionDescriptionRecord) UnmarshalCBOR(data []byte) error {
 		return fmt.Errorf("failed to unmarshal partition description record: %w", err)
 	}
 	return EnsureVersion(pdr, pdr.Version, 1)
+}
+
+func (pdr *PartitionDescriptionRecord) FindValidator(nodeID string) *NodeInfo {
+	for _, validator := range pdr.Validators {
+		if validator.NodeID == nodeID {
+			return validator
+		}
+	}
+	return nil
 }

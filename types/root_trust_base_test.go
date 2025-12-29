@@ -1,13 +1,15 @@
 package types
 
 import (
+	"crypto"
 	"fmt"
 	"strconv"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	abcrypto "github.com/unicitynetwork/bft-go-base/crypto"
 	"github.com/unicitynetwork/bft-go-base/types/hex"
-	"github.com/stretchr/testify/require"
 )
 
 func TestNodeInfo_IsValid(t *testing.T) {
@@ -64,16 +66,16 @@ func TestNewTrustBaseGenesis(t *testing.T) {
 			name: "default settings ok",
 			args: args{
 				nodes: []*NodeInfo{
-					&NodeInfo{NodeID: "1", SigKey: keys["1"].publicKey, Stake: 1},
-					&NodeInfo{NodeID: "2", SigKey: keys["2"].publicKey, Stake: 1},
-					&NodeInfo{NodeID: "3", SigKey: keys["3"].publicKey, Stake: 1},
+					{NodeID: "1", SigKey: keys["1"].publicKey, Stake: 1},
+					{NodeID: "2", SigKey: keys["2"].publicKey, Stake: 1},
+					{NodeID: "3", SigKey: keys["3"].publicKey, Stake: 1},
 				},
 				unicityTreeRootHash: []byte{1},
 			},
 			verifyFunc: func(t *testing.T, tb *RootTrustBaseV1) {
 				// verify values
 				require.EqualValues(t, 1, tb.Epoch)
-				require.EqualValues(t, 1, tb.EpochStartRound)
+				require.EqualValues(t, 0, tb.EpochStart)
 				require.Len(t, tb.RootNodes, 3)
 				require.EqualValues(t, 3, tb.QuorumThreshold)
 				require.EqualValues(t, hex.Bytes(nil), tb.StateHash)
@@ -186,7 +188,7 @@ func TestNewTrustBaseGenesis(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tb, err := NewTrustBaseGenesis(NetworkMainNet, tt.args.nodes, tt.args.opts...)
+			tb, err := NewTrustBase(NetworkMainNet, tt.args.nodes, tt.args.opts...)
 			if tt.wantErrStr != "" {
 				require.ErrorContains(t, err, tt.wantErrStr)
 				require.Nil(t, tb)
@@ -203,9 +205,9 @@ func TestNewTrustBaseGenesis(t *testing.T) {
 
 func TestSignAndVerify(t *testing.T) {
 	keys := genKeys(1)
-	tb, err := NewTrustBaseGenesis(
+	tb, err := NewTrustBase(
 		NetworkMainNet,
-		[]*NodeInfo{&NodeInfo{NodeID: "1", SigKey: keys["1"].publicKey, Stake: 1}},
+		[]*NodeInfo{{NodeID: "1", SigKey: keys["1"].publicKey, Stake: 1}},
 	)
 	require.NoError(t, err)
 
@@ -222,12 +224,12 @@ func TestSignAndVerify(t *testing.T) {
 
 func Test_RootTrustBaseV1_CBOR(t *testing.T) {
 	keys := genKeys(3)
-	tb, err := NewTrustBaseGenesis(
+	tb, err := NewTrustBase(
 		NetworkMainNet,
 		[]*NodeInfo{
-			&NodeInfo{NodeID: "1", SigKey: keys["1"].publicKey, Stake: 1},
-			&NodeInfo{NodeID: "2", SigKey: keys["2"].publicKey, Stake: 1},
-			&NodeInfo{NodeID: "3", SigKey: keys["3"].publicKey, Stake: 1},
+			{NodeID: "1", SigKey: keys["1"].publicKey, Stake: 1},
+			{NodeID: "2", SigKey: keys["2"].publicKey, Stake: 1},
+			{NodeID: "3", SigKey: keys["3"].publicKey, Stake: 1},
 		},
 	)
 	require.NoError(t, err)
@@ -287,14 +289,14 @@ func genKeys(count int) map[string]key {
 	return keys
 }
 
-func NewTrustBase(t *testing.T, verifiers ...abcrypto.Verifier) RootTrustBase {
+func NewTrustBaseT(t *testing.T, verifiers ...abcrypto.Verifier) RootTrustBase {
 	var nodes []*NodeInfo
 	for _, v := range verifiers {
 		sigKey, err := v.MarshalPublicKey()
 		require.NoError(t, err)
 		nodes = append(nodes, &NodeInfo{NodeID: "test", SigKey: sigKey, Stake: 1})
 	}
-	tb, err := NewTrustBaseGenesis(NetworkMainNet, nodes)
+	tb, err := NewTrustBase(NetworkMainNet, nodes)
 	require.NoError(t, err)
 	return tb
 }
@@ -306,7 +308,203 @@ func NewTrustBaseFromVerifiers(t *testing.T, verifiers map[string]abcrypto.Verif
 		require.NoError(t, err)
 		nodes = append(nodes, &NodeInfo{NodeID: nodeID, SigKey: sigKey, Stake: 1})
 	}
-	tb, err := NewTrustBaseGenesis(NetworkMainNet, nodes)
+	tb, err := NewTrustBase(NetworkMainNet, nodes)
 	require.NoError(t, err)
 	return tb
+}
+
+func TestRootTrustBaseV1_Verify(t *testing.T) {
+	// epoch 1 = nodes 1-3
+	keys := genKeys(3)
+	nodes := make([]*NodeInfo, 0, len(keys))
+	for i := 1; i <= len(keys); i++ {
+		nodeID := strconv.Itoa(i)
+		nodes = append(nodes, &NodeInfo{NodeID: nodeID, SigKey: keys[nodeID].publicKey, Stake: 1})
+	}
+
+	// create trust base for epoch 1
+	tb1Signed, err := NewTrustBase(NetworkLocal, nodes,
+		WithEpoch(1),
+		WithEpochStart(5),
+	)
+	require.NoError(t, err)
+	require.EqualValues(t, 3, tb1Signed.QuorumThreshold)
+
+	// sign trust base for epoch 1
+	for i := 1; i <= 3; i++ {
+		nodeID := strconv.Itoa(i)
+		require.NoError(t, tb1Signed.Sign(nodeID, keys[nodeID].signer))
+	}
+
+	// calculate signed trust base hash
+	tb0Hash, err := tb1Signed.Hash(crypto.SHA256)
+	require.NoError(t, err)
+
+	// create a valid trust base for epoch 2, signed by previous validators
+	keys1 := genKeys(3)
+	nodes1 := make([]*NodeInfo, 0, len(keys1))
+	for i := 1 + 10; i <= len(keys)+10; i++ {
+		nodeID := strconv.Itoa(i)
+		nodes1 = append(nodes1, &NodeInfo{NodeID: nodeID, SigKey: keys[nodeID].publicKey, Stake: 1})
+	}
+	tb2Signed, err := NewTrustBase(NetworkLocal, nodes1,
+		WithEpoch(2),
+		WithEpochStart(50),
+		WithPreviousTrustBaseHash(tb0Hash),
+	)
+	require.NoError(t, err)
+	require.EqualValues(t, 3, tb1Signed.QuorumThreshold)
+
+	// sign tb2 with previous epoch keys
+	for i := 1; i <= 3; i++ {
+		nodeID := strconv.Itoa(i)
+		require.NoError(t, tb2Signed.Sign(nodeID, keys[nodeID].signer))
+	}
+
+	tests := []struct {
+		name    string
+		prev    *RootTrustBaseV1
+		curr    *RootTrustBaseV1
+		wantErr string
+	}{
+		{
+			name: "genesis trust base with epoch zero",
+			prev: nil,
+			curr: tb1Signed,
+		},
+		{
+			name: "genesis trust base without signatures",
+			prev: nil,
+			curr: func() *RootTrustBaseV1 {
+				// create unsigned trust base for epoch 1
+				tb1Unsigned, err := NewTrustBase(NetworkLocal, nodes,
+					WithEpoch(1),
+					WithEpochStart(5),
+				)
+				require.NoError(t, err)
+				return tb1Unsigned
+			}(),
+			wantErr: "failed to verify signatures: quorum not reached, signed_votes=0 quorum_threshold=3",
+		},
+		{
+			name: "genesis trust base with zero epoch",
+			prev: nil,
+			curr: func() *RootTrustBaseV1 {
+				g := *tb1Signed
+				g.Epoch = 0
+				return &g
+			}(),
+			wantErr: "genesis trust base epoch must be 1, got 0",
+		},
+		{
+			name: "extend",
+			prev: tb1Signed,
+			curr: tb2Signed,
+		},
+		{
+			name: "extend with different network id",
+			prev: tb1Signed,
+			curr: func() *RootTrustBaseV1 {
+				b := *tb2Signed
+				b.NetworkID = b.NetworkID + 1
+				return &b
+			}(),
+			wantErr: "invalid network id, got 4 previous 3",
+		},
+		{
+			name: "extend with same epoch",
+			prev: tb1Signed,
+			curr: func() *RootTrustBaseV1 {
+				b := *tb2Signed
+				b.Epoch = 1
+				return &b
+			}(),
+			wantErr: "invalid epoch, got 1 previous 1",
+		},
+		{
+			name: "extend with epoch not incremented by 1",
+			prev: tb1Signed,
+			curr: func() *RootTrustBaseV1 {
+				b := *tb2Signed
+				b.Epoch = 3
+				return &b
+			}(),
+			wantErr: "invalid epoch, got 3 previous 1",
+		},
+		{
+			name: "extend with same epoch start",
+			prev: tb1Signed,
+			curr: func() *RootTrustBaseV1 {
+				b := *tb2Signed
+				b.EpochStart = 5
+				return &b
+			}(),
+			wantErr: "invalid epoch start, got 5 previous 5",
+		},
+		{
+			name: "extend with smaller epoch start",
+			prev: tb1Signed,
+			curr: func() *RootTrustBaseV1 {
+				b := *tb2Signed
+				b.EpochStart = 4
+				return &b
+			}(),
+			wantErr: "invalid epoch start, got 4 previous 5",
+		},
+		{
+			name: "extend with invalid previous hash",
+			prev: tb1Signed,
+			curr: func() *RootTrustBaseV1 {
+				b := *tb2Signed
+				b.PreviousEntryHash = []byte{1, 2, 3}
+				return &b
+			}(),
+			wantErr: "previous trust base hash does not match",
+		},
+		{
+			name: "extend without previous epoch signatures",
+			prev: tb1Signed,
+			curr: func() *RootTrustBaseV1 {
+				tb, err := NewTrustBase(NetworkLocal, nodes,
+					WithEpoch(2),
+					WithEpochStart(50),
+					WithPreviousTrustBaseHash(tb0Hash),
+				)
+				require.NoError(t, err)
+				return tb
+			}(),
+			wantErr: "failed to verify signatures: quorum not reached, signed_votes=0 quorum_threshold=3",
+		},
+		{
+			name: "extend with not enough previous epoch signatures",
+			prev: tb1Signed,
+			curr: func() *RootTrustBaseV1 {
+				tb, err := NewTrustBase(NetworkLocal, nodes,
+					WithEpoch(2),
+					WithEpochStart(50),
+					WithPreviousTrustBaseHash(tb0Hash),
+				)
+				require.NoError(t, err)
+
+				// sign with 2 of 3 required previous epoch keys
+				for i := 1; i <= 2; i++ {
+					nodeID := strconv.Itoa(i)
+					require.NoError(t, tb.Sign(nodeID, keys[nodeID].signer))
+				}
+				return tb
+			}(),
+			wantErr: "failed to verify signatures: quorum not reached, signed_votes=2 quorum_threshold=3",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.curr.Verify(tt.prev)
+			if tt.wantErr != "" {
+				require.ErrorContains(t, err, tt.wantErr)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
 }

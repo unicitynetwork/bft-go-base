@@ -5,9 +5,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
+
 	abcrypto "github.com/unicitynetwork/bft-go-base/crypto"
 	testsig "github.com/unicitynetwork/bft-go-base/testutils/sig"
-	"github.com/stretchr/testify/require"
 )
 
 func TestNewTxProof(t *testing.T) {
@@ -45,21 +46,21 @@ func TestVerifyInc(t *testing.T) {
 		block := createBlock(t, "test", signer, createTx(t))
 		proof, err := NewTxRecordProof(block, 0, crypto.SHA256)
 		require.NoError(t, err)
-		tb := NewTrustBase(t, verifier)
+		tb := NewTrustBaseT(t, verifier)
 
 		require.NoError(t, VerifyTxInclusion(proof, tb, crypto.SHA256))
 	})
 
 	t.Run("Test tx record proof is nil", func(t *testing.T) {
 		_, verifier := testsig.CreateSignerAndVerifier(t)
-		tb := NewTrustBase(t, verifier)
+		tb := NewTrustBaseT(t, verifier)
 
 		require.EqualError(t, VerifyTxInclusion(nil, tb, crypto.SHA256), "transaction record proof is nil")
 	})
 
 	t.Run("Test tx record is nil", func(t *testing.T) {
 		_, verifier := testsig.CreateSignerAndVerifier(t)
-		tb := NewTrustBase(t, verifier)
+		tb := NewTrustBaseT(t, verifier)
 		proof := &TxRecordProof{TxProof: &TxProof{Version: 1}}
 
 		require.EqualError(t, VerifyTxInclusion(proof, tb, crypto.SHA256), "transaction record is nil")
@@ -67,7 +68,7 @@ func TestVerifyInc(t *testing.T) {
 
 	t.Run("Test tx order is nil", func(t *testing.T) {
 		_, verifier := testsig.CreateSignerAndVerifier(t)
-		tb := NewTrustBase(t, verifier)
+		tb := NewTrustBaseT(t, verifier)
 		txr := &TransactionRecord{Version: 1, ServerMetadata: &ServerMetadata{SuccessIndicator: TxStatusSuccessful}}
 		proof := &TxRecordProof{TxRecord: txr, TxProof: &TxProof{Version: 1}}
 
@@ -79,7 +80,7 @@ func TestVerifyInc(t *testing.T) {
 		block := createBlock(t, "test", signer, createTx(t))
 		proof, err := NewTxRecordProof(block, 0, crypto.SHA256)
 		require.NoError(t, err)
-		tb := NewTrustBase(t, verifier)
+		tb := NewTrustBaseT(t, verifier)
 		uc, err := proof.TxProof.GetUC()
 		require.NoError(t, err)
 		uc.UnicityTreeCertificate.Partition = 1
@@ -94,7 +95,7 @@ func TestVerifyInc(t *testing.T) {
 		block := createBlock(t, "test", signer, createTx(t))
 		proof, err := NewTxRecordProof(block, 0, crypto.SHA256)
 		require.NoError(t, err)
-		tb := NewTrustBase(t, verifier)
+		tb := NewTrustBaseT(t, verifier)
 		proof.TxProof.BlockHeaderHash = make([]byte, 32)
 
 		require.EqualError(t, VerifyTxInclusion(proof, tb, crypto.SHA256), "proof block hash does not match to block hash in unicity certificate")
@@ -107,7 +108,7 @@ func TestVerifyTxProof(t *testing.T) {
 		block := createBlock(t, "test", signer, createTx(t))
 		proof, err := NewTxRecordProof(block, 0, crypto.SHA256)
 		require.NoError(t, err)
-		tb := NewTrustBase(t, verifier)
+		tb := NewTrustBaseT(t, verifier)
 
 		require.NoError(t, VerifyTxInclusion(proof, tb, crypto.SHA256))
 	})
@@ -119,7 +120,7 @@ func TestVerifyTxProof(t *testing.T) {
 		block := createBlock(t, "test", signer, txr)
 		proof, err := NewTxRecordProof(block, 0, crypto.SHA256)
 		require.NoError(t, err)
-		tb := NewTrustBase(t, verifier)
+		tb := NewTrustBaseT(t, verifier)
 
 		require.EqualError(t, VerifyTxProof(proof, tb, crypto.SHA256), "transaction failed")
 	})
@@ -131,7 +132,7 @@ func TestVerifyTxProof(t *testing.T) {
 		block := createBlock(t, "test", signer, txr)
 		proof, err := NewTxRecordProof(block, 0, crypto.SHA256)
 		require.NoError(t, err)
-		tb := NewTrustBase(t, verifier)
+		tb := NewTrustBaseT(t, verifier)
 
 		require.EqualError(t, VerifyTxProof(proof, tb, crypto.SHA256), "transaction failed")
 	})

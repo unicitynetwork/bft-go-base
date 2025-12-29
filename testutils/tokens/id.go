@@ -25,8 +25,9 @@ generator functions in this package.
 
 Prefer to create test specific PDR and use it's ComposeUnitID method!
 */
-func PDR() types.PartitionDescriptionRecord {
-	return testPDR
+func PDR() *types.PartitionDescriptionRecord {
+	copy := testPDR
+	return &copy
 }
 
 /*

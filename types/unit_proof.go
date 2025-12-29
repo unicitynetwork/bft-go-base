@@ -62,7 +62,7 @@ type (
 	}
 
 	UnicityCertificateValidator interface {
-		Validate(uc *UnicityCertificate, shardConfHash []byte) error
+		Validate(uc *UnicityCertificate, shardConf *PartitionDescriptionRecord, trustBase RootTrustBase) error
 	}
 )
 
@@ -93,7 +93,7 @@ func (u *UnitStateProof) getUCv1() (*UnicityCertificate, error) {
 	return uc, nil
 }
 
-func (u *UnitStateProof) Verify(algorithm crypto.Hash, unitState *UnitState, ucv UnicityCertificateValidator, shardConfHash []byte) error {
+func (u *UnitStateProof) Verify(algorithm crypto.Hash, unitState *UnitState, ucv UnicityCertificateValidator, shardConf *PartitionDescriptionRecord, trustBase RootTrustBase) error {
 	if err := u.IsValid(); err != nil {
 		return fmt.Errorf("invalid unit state proof: %w", err)
 	}
@@ -105,7 +105,7 @@ func (u *UnitStateProof) Verify(algorithm crypto.Hash, unitState *UnitState, ucv
 	if err != nil {
 		return fmt.Errorf("failed to get unicity certificate: %w", err)
 	}
-	if err := ucv.Validate(uc, shardConfHash); err != nil {
+	if err := ucv.Validate(uc, shardConf, trustBase); err != nil {
 		return fmt.Errorf("invalid unicity certificate: %w", err)
 	}
 

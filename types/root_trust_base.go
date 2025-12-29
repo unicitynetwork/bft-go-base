@@ -1,6 +1,7 @@
 package types
 
 import (
+	"bytes"
 	"cmp"
 	"crypto"
 	"errors"
@@ -15,7 +16,10 @@ import (
 
 type (
 	RootTrustBase interface {
+		GetVersion() Version
 		GetNetworkID() NetworkID
+		GetEpoch() uint64
+		GetEpochStart() uint64
 		VerifyQuorumSignatures(data []byte, signatures map[string]hex.Bytes) error
 		VerifySignature(data []byte, sig []byte, nodeID string) (uint64, error)
 		GetQuorumThreshold() uint64
@@ -28,7 +32,7 @@ type (
 		Version           Version              `json:"version"`
 		NetworkID         NetworkID            `json:"networkId"`
 		Epoch             uint64               `json:"epoch"`             // current epoch number
-		EpochStartRound   uint64               `json:"epochStartRound"`   // root chain round number when the epoch begins
+		EpochStart        uint64               `json:"epochStartRound"`   // root chain round number when the epoch begins
 		RootNodes         []*NodeInfo          `json:"rootNodes"`         // list of all root nodes for the current epoch
 		QuorumThreshold   uint64               `json:"quorumThreshold"`   // amount of coins required to reach consensus, currently each node gets equal amount of voting power i.e. +1 for each node
 		StateHash         hex.Bytes            `json:"stateHash"`         // unicity tree root hash
@@ -51,18 +55,21 @@ type (
 	Option func(c *trustBaseConf)
 
 	trustBaseConf struct {
-		quorumThreshold uint64
+		epoch                 uint64
+		epochStart            uint64
+		quorumThreshold       uint64
+		previousTrustBaseHash hex.Bytes
 	}
 )
 
-// NewTrustBaseGenesis creates new unsigned root trust base with default parameters.
-func NewTrustBaseGenesis(networkID NetworkID, rootNodes []*NodeInfo, opts ...Option) (*RootTrustBaseV1, error) {
+// NewTrustBase creates new unsigned root trust base.
+func NewTrustBase(networkID NetworkID, rootNodes []*NodeInfo, opts ...Option) (*RootTrustBaseV1, error) {
 	if len(rootNodes) == 0 {
 		return nil, errors.New("nodes list is empty")
 	}
 
 	// init config
-	c := &trustBaseConf{}
+	c := &trustBaseConf{epoch: 1}
 	for _, opt := range opts {
 		opt(c)
 	}
@@ -93,13 +100,13 @@ func NewTrustBaseGenesis(networkID NetworkID, rootNodes []*NodeInfo, opts ...Opt
 	return &RootTrustBaseV1{
 		Version:           1,
 		NetworkID:         networkID,
-		Epoch:             1,
-		EpochStartRound:   1,
+		Epoch:             c.epoch,
+		EpochStart:        c.epochStart,
 		RootNodes:         rootNodes,
 		QuorumThreshold:   c.quorumThreshold,
 		StateHash:         nil,
 		ChangeRecordHash:  nil,
-		PreviousEntryHash: nil,
+		PreviousEntryHash: c.previousTrustBaseHash,
 		Signatures:        make(map[string]hex.Bytes),
 	}, nil
 }
@@ -108,6 +115,24 @@ func NewTrustBaseGenesis(networkID NetworkID, rootNodes []*NodeInfo, opts ...Opt
 func WithQuorumThreshold(threshold uint64) Option {
 	return func(c *trustBaseConf) {
 		c.quorumThreshold = threshold
+	}
+}
+
+func WithEpoch(epoch uint64) Option {
+	return func(c *trustBaseConf) {
+		c.epoch = epoch
+	}
+}
+
+func WithEpochStart(epochStart uint64) Option {
+	return func(c *trustBaseConf) {
+		c.epochStart = epochStart
+	}
+}
+
+func WithPreviousTrustBaseHash(previousTrustBaseHash hex.Bytes) Option {
+	return func(c *trustBaseConf) {
+		c.previousTrustBaseHash = previousTrustBaseHash
 	}
 }
 
@@ -171,7 +196,7 @@ func (r *RootTrustBaseV1) Hash(hashAlgo crypto.Hash) ([]byte, error) {
 	return hasher.Sum()
 }
 
-// SigBytes serializes all fields expect for the signatures field.
+// SigBytes serializes all fields expect for the Signatures field itself.
 func (r RootTrustBaseV1) SigBytes() ([]byte, error) {
 	r.Signatures = nil
 	bs, err := r.MarshalCBOR()
@@ -239,6 +264,14 @@ func (r *RootTrustBaseV1) GetNetworkID() NetworkID {
 	return r.NetworkID
 }
 
+func (r *RootTrustBaseV1) GetEpoch() uint64 {
+	return r.Epoch
+}
+
+func (r *RootTrustBaseV1) GetEpochStart() uint64 {
+	return r.EpochStart
+}
+
 func (r *RootTrustBaseV1) MarshalCBOR() ([]byte, error) {
 	type alias RootTrustBaseV1
 	if r.Version == 0 {
@@ -261,6 +294,78 @@ func (r *RootTrustBaseV1) getRootNode(nodeID string) *NodeInfo {
 	})
 	if found {
 		return r.RootNodes[idx]
+	}
+	return nil
+}
+
+// Verify verifies the trust base, including the signatures.
+//
+// Common for all trust bases:
+//   - The current epoch signatures must be valid and reach quorum.
+//
+// Genesis trust base:
+//   - Epoch must be equal to 1.
+//
+// Non-genesis trust base must extend previous trust base:
+//   - The network identifiers must match.
+//   - The epoch number must be strictly greater than the previous epoch number.
+//   - The epoch start round must be strictly greater than the previous epoch start round.
+//   - The hash of the previous trust must match the previousEntryHash.
+//   - The previous epoch signatures must be valid and reach quorum.
+func (r *RootTrustBaseV1) Verify(prev *RootTrustBaseV1) error {
+	if err := r.IsValid(prev); err != nil {
+		return err
+	}
+	return r.VerifySignatures(prev)
+}
+
+// IsValid verifies the trust base without verifying the signatures.
+// Use VerifySignatures to verify the signatures.
+func (r *RootTrustBaseV1) IsValid(prev *RootTrustBaseV1) error {
+	if prev == nil {
+		if r.Epoch != 1 {
+			return fmt.Errorf("genesis trust base epoch must be 1, got %d", r.Epoch)
+		}
+		return nil
+	}
+	if r.NetworkID != prev.NetworkID {
+		return fmt.Errorf("invalid network id, got %d previous %d", r.NetworkID, prev.NetworkID)
+	}
+	if r.Epoch != prev.Epoch+1 {
+		return fmt.Errorf("invalid epoch, got %d previous %d", r.Epoch, prev.Epoch)
+	}
+	if r.EpochStart <= prev.EpochStart {
+		return fmt.Errorf("invalid epoch start, got %d previous %d", r.EpochStart, prev.EpochStart)
+	}
+	prevHash, err := prev.Hash(crypto.SHA256)
+	if err != nil {
+		return fmt.Errorf("failed to calculate previous trust base hash: %w", err)
+	}
+	if !bytes.Equal(r.PreviousEntryHash, prevHash) {
+		return errors.New("previous trust base hash does not match")
+	}
+	return nil
+}
+
+// VerifySignatures verifies that the trust base is signed by the previous
+// epoch's validators. For the genesis trust base (epoch 1), the trust base
+// must be self-signed by the genesis (epoch 1) validators.
+func (r *RootTrustBaseV1) VerifySignatures(prev *RootTrustBaseV1) error {
+	sigBytes, err := r.SigBytes()
+	if err != nil {
+		return fmt.Errorf("failed to get previous epoch sig bytes: %w", err)
+	}
+	var tb *RootTrustBaseV1
+	if r.Epoch == 1 {
+		tb = r
+	} else {
+		if prev == nil {
+			return errors.New("previous trust base is nil")
+		}
+		tb = prev
+	}
+	if err := tb.VerifyQuorumSignatures(sigBytes, r.Signatures); err != nil {
+		return fmt.Errorf("failed to verify signatures: %w", err)
 	}
 	return nil
 }

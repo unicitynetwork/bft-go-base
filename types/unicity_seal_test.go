@@ -80,7 +80,7 @@ func TestUnicitySeal_IsValid(t *testing.T) {
 
 func TestUnicitySeal_Verify(t *testing.T) {
 	signer, verifier := testsig.CreateSignerAndVerifier(t)
-	trustBase := NewTrustBase(t, verifier)
+	trustBase := NewTrustBaseT(t, verifier)
 	randomHash := test.RandomBytes(32)
 
 	// createUS returns UnicitySeal which is not signed but otherwise valid(ish)
@@ -197,7 +197,7 @@ func TestUnicitySeal_cbor(t *testing.T) {
 	err := seal.Sign("test", signer)
 	require.NoError(t, err)
 
-	tb := NewTrustBase(t, verifier)
+	tb := NewTrustBaseT(t, verifier)
 	err = seal.Verify(tb)
 	require.NoError(t, err)
 
