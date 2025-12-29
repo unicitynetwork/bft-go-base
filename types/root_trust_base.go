@@ -69,7 +69,7 @@ func NewTrustBase(networkID NetworkID, rootNodes []*NodeInfo, opts ...Option) (*
 	}
 
 	// init config
-	c := &trustBaseConf{}
+	c := &trustBaseConf{epoch: 1}
 	for _, opt := range opts {
 		opt(c)
 	}
@@ -304,7 +304,7 @@ func (r *RootTrustBaseV1) getRootNode(nodeID string) *NodeInfo {
 //   - The current epoch signatures must be valid and reach quorum.
 //
 // Genesis trust base:
-//   - Epoch must be zero.
+//   - Epoch must be equal to 1.
 //
 // Non-genesis trust base must extend previous trust base:
 //   - The network identifiers must match.
@@ -323,8 +323,8 @@ func (r *RootTrustBaseV1) Verify(prev *RootTrustBaseV1) error {
 // Use VerifySignatures to verify the signatures.
 func (r *RootTrustBaseV1) IsValid(prev *RootTrustBaseV1) error {
 	if prev == nil {
-		if r.Epoch != 0 {
-			return fmt.Errorf("genesis trust base epoch must be 0, got %d", r.Epoch)
+		if r.Epoch != 1 {
+			return fmt.Errorf("genesis trust base epoch must be 1, got %d", r.Epoch)
 		}
 		return nil
 	}
@@ -348,15 +348,15 @@ func (r *RootTrustBaseV1) IsValid(prev *RootTrustBaseV1) error {
 }
 
 // VerifySignatures verifies that the trust base is signed by the previous
-// epoch's validators. For the genesis trust base (epoch 0), the trust base
-// must be self-signed by the genesis (epoch 0) validators.
+// epoch's validators. For the genesis trust base (epoch 1), the trust base
+// must be self-signed by the genesis (epoch 1) validators.
 func (r *RootTrustBaseV1) VerifySignatures(prev *RootTrustBaseV1) error {
 	sigBytes, err := r.SigBytes()
 	if err != nil {
 		return fmt.Errorf("failed to get previous epoch sig bytes: %w", err)
 	}
 	var tb *RootTrustBaseV1
-	if r.Epoch == 0 {
+	if r.Epoch == 1 {
 		tb = r
 	} else {
 		if prev == nil {
