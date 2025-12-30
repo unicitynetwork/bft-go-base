@@ -157,7 +157,7 @@ func (x *UnicityCertificate) GetRootEpoch() uint64 {
 	if x != nil && x.UnicitySeal != nil {
 		return x.UnicitySeal.Epoch
 	}
-	return 0
+	return 1
 }
 
 // CheckNonEquivocatingCertificates checks if provided certificates are equivocating
