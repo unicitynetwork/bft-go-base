@@ -91,7 +91,7 @@ func (pdr *PartitionDescriptionRecord) IsValid() error {
 	if pdr.UnitIDLen%8 != 0 {
 		return fmt.Errorf("unit id length must be in full bytes, got %d bytes and %d bits", pdr.UnitIDLen/8, pdr.UnitIDLen%8)
 	}
-	if pdr.T2Timeout < 800*time.Millisecond || pdr.T2Timeout > 10*time.Second {
+	if pdr.T2Timeout < 800*time.Millisecond || pdr.T2Timeout > 60*time.Minute {
 		return fmt.Errorf("t2 timeout value out of allowed range: %s", pdr.T2Timeout)
 	}
 

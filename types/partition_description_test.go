@@ -113,8 +113,8 @@ func Test_PartitionDescriptionRecord_IsValid(t *testing.T) {
 		pdr.T2Timeout = 499 * time.Millisecond
 		require.EqualError(t, pdr.IsValid(), "t2 timeout value out of allowed range: 499ms")
 
-		pdr.T2Timeout = 2 * time.Minute
-		require.EqualError(t, pdr.IsValid(), "t2 timeout value out of allowed range: 2m0s")
+		pdr.T2Timeout = 61 * time.Minute
+		require.EqualError(t, pdr.IsValid(), "t2 timeout value out of allowed range: 1h1m0s")
 	})
 
 	t.Run("invalid validator", func(t *testing.T) {
