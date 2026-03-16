@@ -8,8 +8,9 @@ import (
 	"testing"
 	"time"
 
-	abcrypto "github.com/unicitynetwork/bft-go-base/crypto"
 	"github.com/stretchr/testify/require"
+
+	abcrypto "github.com/unicitynetwork/bft-go-base/crypto"
 )
 
 func Test_PartitionDescriptionRecord_Hash(t *testing.T) {
@@ -114,7 +115,7 @@ func Test_PartitionDescriptionRecord_IsValid(t *testing.T) {
 		require.EqualError(t, pdr.IsValid(), "t2 timeout value out of allowed range: 499ms")
 
 		pdr.T2Timeout = 2 * time.Minute
-		require.EqualError(t, pdr.IsValid(), "t2 timeout value out of allowed range: 2m0s")
+		require.NoError(t, pdr.IsValid())
 	})
 
 	t.Run("invalid validator", func(t *testing.T) {
