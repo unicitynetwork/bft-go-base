@@ -521,7 +521,9 @@ func TestBlock_CBOR(t *testing.T) {
 				Version:      1,
 				Hash:         []byte{1, 1, 1},
 				PreviousHash: []byte{1, 1, 1},
-			}}
+			},
+			ShardTreeCertificate: NewShardTreeCertificate(),
+		}
 		ucBytes, err := (uc).MarshalCBOR()
 		require.NoError(t, err)
 		b := Block{

@@ -836,7 +836,7 @@ func Test_UnicityCertificate_Cbor(t *testing.T) {
 			Version:                1,
 			InputRecord:            &InputRecord{Version: 1},
 			TRHash:                 []byte{1, 2, 3, 4, 5},
-			ShardTreeCertificate:   ShardTreeCertificate{Shard: ShardID{}},
+			ShardTreeCertificate:   ShardTreeCertificate{Version: 1, Shard: ShardID{}},
 			UnicityTreeCertificate: &UnicityTreeCertificate{Version: 1},
 			UnicitySeal: &UnicitySeal{
 				Version:    1,
@@ -858,7 +858,7 @@ func Test_UnicityCertificate_Cbor(t *testing.T) {
 		//uc := &UnicityCertificate{InputRecord: &InputRecord{}, TRHash: []byte{1}, UnicityTreeCertificate: &UnicityTreeCertificate{}, UnicitySeal: &UnicitySeal{}}
 		//_ucData, _ := uc.MarshalCBOR()
 		//fmt.Printf("ucData: 0x%X\n", _ucData)
-		ucData, err := hex.Decode([]byte("0xD998598701D9985A8A010000F6F6F600F600F64101F6824180F6D9985C830100F6D9985D880100000000F6F6F6"))
+		ucData, err := hex.Decode([]byte("0xD998598701D9985A8A010000F6F6F600F600F64101F6D9985B83014180F6D9985C830100F6D9985D880100000000F6F6F6"))
 		require.NoError(t, err)
 
 		uc1 := &UnicityCertificate{}
