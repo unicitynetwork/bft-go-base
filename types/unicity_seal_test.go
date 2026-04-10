@@ -268,7 +268,7 @@ func TestUnicitySeal_UnmarshalCBOR(t *testing.T) {
 		require.NoError(t, err)
 		seal := &UnicitySeal{}
 		err = seal.UnmarshalCBOR(data)
-		require.EqualError(t, err, "unmarshaling UnicitySeal: expected tag 1001, got 1000")
+		require.EqualError(t, err, "unmarshaling UnicitySeal: expected tag 39005, got 1000")
 	})
 
 	t.Run("Invalid encoding", func(t *testing.T) {
