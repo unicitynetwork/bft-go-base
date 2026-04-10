@@ -272,20 +272,25 @@ func (r *RootTrustBaseV1) GetEpochStart() uint64 {
 	return r.EpochStart
 }
 
+func NewRootTrustBaseV1() *RootTrustBaseV1 {
+	return &RootTrustBaseV1{Version: 1}
+}
+
 func (r *RootTrustBaseV1) MarshalCBOR() ([]byte, error) {
 	type alias RootTrustBaseV1
-	if r.Version == 0 {
-		r.Version = r.GetVersion()
+	cp := *r
+	if cp.Version == 0 {
+		cp.Version = 1
 	}
-	return Cbor.MarshalTaggedValue(UnicityTrustBaseTag, (*alias)(r))
+	return Cbor.MarshalTaggedValue(UnicityTrustBaseTag, (*alias)(&cp))
 }
 
 func (r *RootTrustBaseV1) UnmarshalCBOR(data []byte) error {
 	type alias RootTrustBaseV1
-	if err := Cbor.UnmarshalTaggedValue(UnicityTrustBaseTag, data, (*alias)(r)); err != nil {
+	if err := UnmarshalTaggedVersioned(UnicityTrustBaseTag, 1, data, (*alias)(r), r); err != nil {
 		return fmt.Errorf("failed to unmarshal root trust base: %w", err)
 	}
-	return EnsureVersion(r, r.Version, 1)
+	return nil
 }
 
 func (r *RootTrustBaseV1) getRootNode(nodeID string) *NodeInfo {

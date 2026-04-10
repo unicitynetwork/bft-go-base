@@ -265,18 +265,20 @@ func (x *UnicityCertificate) GetVersion() Version {
 	return 1
 }
 
+func NewUnicityCertificate() *UnicityCertificate {
+	return &UnicityCertificate{Version: 1}
+}
+
 func (x *UnicityCertificate) MarshalCBOR() ([]byte, error) {
 	type alias UnicityCertificate
-	if x.Version == 0 {
-		x.Version = x.GetVersion()
+	cp := *x
+	if cp.Version == 0 {
+		cp.Version = 1
 	}
-	return Cbor.MarshalTaggedValue(UnicityCertificateTag, (*alias)(x))
+	return Cbor.MarshalTaggedValue(UnicityCertificateTag, (*alias)(&cp))
 }
 
 func (x *UnicityCertificate) UnmarshalCBOR(data []byte) error {
 	type alias UnicityCertificate
-	if err := Cbor.UnmarshalTaggedValue(UnicityCertificateTag, data, (*alias)(x)); err != nil {
-		return err
-	}
-	return EnsureVersion(x, x.Version, 1)
+	return UnmarshalTaggedVersioned(UnicityCertificateTag, 1, data, (*alias)(x), x)
 }

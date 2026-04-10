@@ -24,6 +24,7 @@ type FeeCreditRecord struct {
 
 func NewFeeCreditRecord(balance uint64, ownerPredicate []byte, minLifetime uint64) *FeeCreditRecord {
 	return &FeeCreditRecord{
+		Version:        1,
 		Balance:        balance,
 		OwnerPredicate: ownerPredicate,
 		MinLifetime:    minLifetime,
@@ -67,18 +68,16 @@ func (b *FeeCreditRecord) GetVersion() types.Version {
 
 func (b *FeeCreditRecord) MarshalCBOR() ([]byte, error) {
 	type alias FeeCreditRecord
-	if b.Version == 0 {
-		b.Version = b.GetVersion()
+	cp := *b
+	if cp.Version == 0 {
+		cp.Version = 1
 	}
-	return types.Cbor.Marshal((*alias)(b))
+	return types.Cbor.Marshal((*alias)(&cp))
 }
 
 func (b *FeeCreditRecord) UnmarshalCBOR(data []byte) error {
 	type alias FeeCreditRecord
-	if err := types.Cbor.Unmarshal(data, (*alias)(b)); err != nil {
-		return err
-	}
-	return types.EnsureVersion(b, b.Version, 1)
+	return types.UnmarshalVersioned(1, data, (*alias)(b), b)
 }
 
 func (b *FeeCreditRecord) IsExpired(currentRoundNumber uint64) bool {

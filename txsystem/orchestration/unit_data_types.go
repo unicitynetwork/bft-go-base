@@ -39,18 +39,20 @@ func (b *VarData) GetVersion() types.Version {
 	return 1
 }
 
+func NewVarData(epochNumber uint64) *VarData {
+	return &VarData{Version: 1, EpochNumber: epochNumber}
+}
+
 func (b *VarData) MarshalCBOR() ([]byte, error) {
 	type alias VarData
-	if b.Version == 0 {
-		b.Version = b.GetVersion()
+	cp := *b
+	if cp.Version == 0 {
+		cp.Version = 1
 	}
-	return types.Cbor.Marshal((*alias)(b))
+	return types.Cbor.Marshal((*alias)(&cp))
 }
 
 func (b *VarData) UnmarshalCBOR(data []byte) error {
 	type alias VarData
-	if err := types.Cbor.Unmarshal(data, (*alias)(b)); err != nil {
-		return err
-	}
-	return types.EnsureVersion(b, b.Version, 1)
+	return types.UnmarshalVersioned(1, data, (*alias)(b), b)
 }

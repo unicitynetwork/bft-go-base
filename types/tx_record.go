@@ -130,20 +130,22 @@ func (t *TransactionRecord) GetVersion() Version {
 	return t.Version
 }
 
+func NewTransactionRecord() *TransactionRecord {
+	return &TransactionRecord{Version: 1}
+}
+
 func (t *TransactionRecord) MarshalCBOR() ([]byte, error) {
 	type alias TransactionRecord
-	if t.Version == 0 {
-		t.Version = t.GetVersion()
+	cp := *t
+	if cp.Version == 0 {
+		cp.Version = 1
 	}
-	return Cbor.MarshalTaggedValue(TransactionRecordTag, (*alias)(t))
+	return Cbor.MarshalTaggedValue(TransactionRecordTag, (*alias)(&cp))
 }
 
 func (t *TransactionRecord) UnmarshalCBOR(data []byte) error {
 	type alias TransactionRecord
-	if err := Cbor.UnmarshalTaggedValue(TransactionRecordTag, data, (*alias)(t)); err != nil {
-		return err
-	}
-	return EnsureVersion(t, t.Version, 1)
+	return UnmarshalTaggedVersioned(TransactionRecordTag, 1, data, (*alias)(t), t)
 }
 
 func (sm *ServerMetadata) GetActualFee() uint64 {

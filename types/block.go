@@ -207,20 +207,25 @@ func (h *Header) GetVersion() Version {
 	return 1
 }
 
+func NewHeader() *Header {
+	return &Header{Version: 1}
+}
+
 func (h *Header) MarshalCBOR() ([]byte, error) {
 	type alias Header
-	if h.Version == 0 {
-		h.Version = h.GetVersion()
+	cp := *h
+	if cp.Version == 0 {
+		cp.Version = 1
 	}
-	return Cbor.MarshalTaggedValue(BlockTag, (*alias)(h))
+	return Cbor.MarshalTaggedValue(BlockTag, (*alias)(&cp))
 }
 
 func (h *Header) UnmarshalCBOR(data []byte) error {
 	type alias Header
-	if err := Cbor.UnmarshalTaggedValue(BlockTag, data, (*alias)(h)); err != nil {
+	if err := UnmarshalTaggedVersioned(BlockTag, 1, data, (*alias)(h), h); err != nil {
 		return fmt.Errorf("failed to unmarshal block header: %w", err)
 	}
-	return EnsureVersion(h, h.Version, 1)
+	return nil
 }
 
 func (h *Header) Hash(algorithm crypto.Hash) ([]byte, error) {

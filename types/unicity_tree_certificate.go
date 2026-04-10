@@ -92,20 +92,22 @@ func (utc *UnicityTreeCertificate) GetVersion() Version {
 	return 1
 }
 
+func NewUnicityTreeCertificate() *UnicityTreeCertificate {
+	return &UnicityTreeCertificate{Version: 1}
+}
+
 func (utc *UnicityTreeCertificate) MarshalCBOR() ([]byte, error) {
 	type alias UnicityTreeCertificate
-	if utc.Version == 0 {
-		utc.Version = utc.GetVersion()
+	cp := *utc
+	if cp.Version == 0 {
+		cp.Version = 1
 	}
-	return Cbor.MarshalTaggedValue(UnicityTreeCertificateTag, (*alias)(utc))
+	return Cbor.MarshalTaggedValue(UnicityTreeCertificateTag, (*alias)(&cp))
 }
 
 func (utc *UnicityTreeCertificate) UnmarshalCBOR(data []byte) error {
 	type alias UnicityTreeCertificate
-	if err := Cbor.UnmarshalTaggedValue(UnicityTreeCertificateTag, data, (*alias)(utc)); err != nil {
-		return err
-	}
-	return EnsureVersion(utc, utc.Version, 1)
+	return UnmarshalTaggedVersioned(UnicityTreeCertificateTag, 1, data, (*alias)(utc), utc)
 }
 
 func (p *PathItem) ToIMTPathItem() *imt.PathItem {

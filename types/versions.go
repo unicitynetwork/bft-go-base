@@ -45,6 +45,32 @@ func EnsureVersion(data Versioned, actual, expected Version) error {
 	return nil
 }
 
+// UnmarshalTaggedVersioned decodes tagged CBOR into aliasPtr and verifies that
+// v.GetVersion() equals expectedVersion. It centralizes the decode-then-check
+// pattern used by every Versioned type in this package.
+func UnmarshalTaggedVersioned[A any](tag CborTag, expectedVersion Version, data []byte, aliasPtr *A, v Versioned) error {
+	if err := Cbor.UnmarshalTaggedValue(tag, data, aliasPtr); err != nil {
+		return err
+	}
+	if got := v.GetVersion(); got != expectedVersion {
+		return fmt.Errorf("invalid version (type %T), expected %d, got %d", v, expectedVersion, got)
+	}
+	return nil
+}
+
+// UnmarshalVersioned decodes untagged CBOR into aliasPtr and verifies that
+// v.GetVersion() equals expectedVersion. Used by unit data types that are
+// CBOR-embedded inside a larger structure and carry no outer tag.
+func UnmarshalVersioned[A any](expectedVersion Version, data []byte, aliasPtr *A, v Versioned) error {
+	if err := Cbor.Unmarshal(data, aliasPtr); err != nil {
+		return err
+	}
+	if got := v.GetVersion(); got != expectedVersion {
+		return fmt.Errorf("invalid version (type %T), expected %d, got %d", v, expectedVersion, got)
+	}
+	return nil
+}
+
 func parseTaggedCBOR(b []byte, objID CborTag) (Version, []any, error) {
 	tag, arr, err := Cbor.UnmarshalTagged(b)
 	if err != nil {

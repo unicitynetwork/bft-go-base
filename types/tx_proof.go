@@ -162,18 +162,20 @@ func (p *TxProof) GetVersion() Version {
 	return 1
 }
 
+func NewTxProof() *TxProof {
+	return &TxProof{Version: 1}
+}
+
 func (p *TxProof) MarshalCBOR() ([]byte, error) {
 	type alias TxProof
-	if p.Version == 0 {
-		p.Version = p.GetVersion()
+	cp := *p
+	if cp.Version == 0 {
+		cp.Version = 1
 	}
-	return Cbor.MarshalTaggedValue(TxProofTag, (*alias)(p))
+	return Cbor.MarshalTaggedValue(TxProofTag, (*alias)(&cp))
 }
 
 func (p *TxProof) UnmarshalCBOR(data []byte) error {
 	type alias TxProof
-	if err := Cbor.UnmarshalTaggedValue(TxProofTag, data, (*alias)(p)); err != nil {
-		return err
-	}
-	return EnsureVersion(p, p.Version, 1)
+	return UnmarshalTaggedVersioned(TxProofTag, 1, data, (*alias)(p), p)
 }
