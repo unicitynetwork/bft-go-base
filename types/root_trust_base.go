@@ -277,12 +277,12 @@ func (r *RootTrustBaseV1) MarshalCBOR() ([]byte, error) {
 	if r.Version == 0 {
 		r.Version = r.GetVersion()
 	}
-	return Cbor.MarshalTaggedValue(RootTrustBaseTag, (*alias)(r))
+	return Cbor.MarshalTaggedValue(UnicityTrustBaseTag, (*alias)(r))
 }
 
 func (r *RootTrustBaseV1) UnmarshalCBOR(data []byte) error {
 	type alias RootTrustBaseV1
-	if err := Cbor.UnmarshalTaggedValue(RootTrustBaseTag, data, (*alias)(r)); err != nil {
+	if err := Cbor.UnmarshalTaggedValue(UnicityTrustBaseTag, data, (*alias)(r)); err != nil {
 		return fmt.Errorf("failed to unmarshal root trust base: %w", err)
 	}
 	return EnsureVersion(r, r.Version, 1)

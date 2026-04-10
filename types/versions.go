@@ -16,25 +16,21 @@ type Versioned interface {
 }
 
 const (
-	_ = iota + CborTag(1000)
-	UnicitySealTag
-	RootGenesisTag
-	GenesisRootRecordTag
-	ConsensusParamsTag
-	GenesisPartitionRecordTag
-	PartitionNodeTag
-	UnicityCertificateTag
-	InputRecordTag
-	TxProofTag
-	UnitStateProofTag
-	PartitionDescriptionRecordTag
-	BlockTag
-	RootTrustBaseTag
-	UnicityTreeCertificateTag
-	TransactionRecordTag
-	TransactionOrderTag
-	RootPartitionBlockDataTag
-	RootPartitionRoundInfoTag
+	// https://github.com/unicitynetwork/unicity-ids/blob/main/cbor-tags.json
+	UnicityTrustBaseTag           CborTag = 39000
+	UnicityCertificateTag         CborTag = 39001
+	InputRecordTag                CborTag = 39002
+	ShardTreeCertificateTag       CborTag = 39003
+	UnicityTreeCertificateTag     CborTag = 39004
+	UnicitySealTag                CborTag = 39005
+	RootPartitionBlockDataTag     CborTag = 39006
+	RootPartitionRoundInfoTag     CborTag = 39007
+	PartitionDescriptionRecordTag CborTag = 39008
+	BlockTag                      CborTag = 39009
+	TransactionRecordTag          CborTag = 39010
+	TransactionOrderTag           CborTag = 39011
+	TxProofTag                    CborTag = 39012
+	UnitStateProofTag             CborTag = 39013
 )
 
 func ErrInvalidVersion(s Versioned) error {
