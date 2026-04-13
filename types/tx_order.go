@@ -231,20 +231,22 @@ func (t *TransactionOrder) GetVersion() Version {
 	return t.Version
 }
 
+func NewTransactionOrder() *TransactionOrder {
+	return &TransactionOrder{Version: 1}
+}
+
 func (t *TransactionOrder) MarshalCBOR() ([]byte, error) {
 	type alias TransactionOrder
-	if t.Version == 0 {
-		t.Version = t.GetVersion()
+	cp := *t
+	if cp.Version == 0 {
+		cp.Version = 1
 	}
-	return Cbor.MarshalTaggedValue(TransactionOrderTag, (*alias)(t))
+	return Cbor.MarshalTaggedValue(TransactionOrderTag, (*alias)(&cp))
 }
 
 func (t *TransactionOrder) UnmarshalCBOR(data []byte) error {
 	type alias TransactionOrder
-	if err := Cbor.UnmarshalTaggedValue(TransactionOrderTag, data, (*alias)(t)); err != nil {
-		return err
-	}
-	return EnsureVersion(t, t.Version, 1)
+	return UnmarshalTaggedVersioned(TransactionOrderTag, 1, data, (*alias)(t), t)
 }
 
 func (t *TransactionOrder) AddStateUnlockCommitProof(unlockProof []byte) {

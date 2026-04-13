@@ -64,6 +64,7 @@ type FungibleTokenData struct {
 
 func NewFungibleTokenTypeData(attr *DefineFungibleTokenAttributes) types.UnitData {
 	return &FungibleTokenTypeData{
+		Version:                  1,
 		Symbol:                   attr.Symbol,
 		Name:                     attr.Name,
 		Icon:                     attr.Icon,
@@ -77,6 +78,7 @@ func NewFungibleTokenTypeData(attr *DefineFungibleTokenAttributes) types.UnitDat
 
 func NewNonFungibleTokenTypeData(attr *DefineNonFungibleTokenAttributes) types.UnitData {
 	return &NonFungibleTokenTypeData{
+		Version:                  1,
 		Symbol:                   attr.Symbol,
 		Name:                     attr.Name,
 		Icon:                     attr.Icon,
@@ -90,6 +92,7 @@ func NewNonFungibleTokenTypeData(attr *DefineNonFungibleTokenAttributes) types.U
 
 func NewNonFungibleTokenData(typeID types.UnitID, attr *MintNonFungibleTokenAttributes) types.UnitData {
 	return &NonFungibleTokenData{
+		Version:             1,
 		TypeID:              typeID,
 		Name:                attr.Name,
 		URI:                 attr.URI,
@@ -101,6 +104,7 @@ func NewNonFungibleTokenData(typeID types.UnitID, attr *MintNonFungibleTokenAttr
 
 func NewFungibleTokenData(typeID types.UnitID, value uint64, ownerPredicate []byte, minLifetime uint64) types.UnitData {
 	return &FungibleTokenData{
+		Version:        1,
 		TypeID:         typeID,
 		Value:          value,
 		OwnerPredicate: ownerPredicate,
@@ -141,18 +145,16 @@ func (n *NonFungibleTokenTypeData) GetVersion() types.Version {
 
 func (n *NonFungibleTokenTypeData) MarshalCBOR() ([]byte, error) {
 	type alias NonFungibleTokenTypeData
-	if n.Version == 0 {
-		n.Version = n.GetVersion()
+	cp := *n
+	if cp.Version == 0 {
+		cp.Version = 1
 	}
-	return types.Cbor.Marshal((*alias)(n))
+	return types.Cbor.Marshal((*alias)(&cp))
 }
 
 func (n *NonFungibleTokenTypeData) UnmarshalCBOR(data []byte) error {
 	type alias NonFungibleTokenTypeData
-	if err := types.Cbor.Unmarshal(data, (*alias)(n)); err != nil {
-		return err
-	}
-	return types.EnsureVersion(n, n.Version, 1)
+	return types.UnmarshalVersioned(1, data, (*alias)(n), n)
 }
 
 func (n *NonFungibleTokenTypeData) Owner() []byte {
@@ -191,18 +193,16 @@ func (n *NonFungibleTokenData) GetVersion() types.Version {
 
 func (n *NonFungibleTokenData) MarshalCBOR() ([]byte, error) {
 	type alias NonFungibleTokenData
-	if n.Version == 0 {
-		n.Version = n.GetVersion()
+	cp := *n
+	if cp.Version == 0 {
+		cp.Version = 1
 	}
-	return types.Cbor.Marshal((*alias)(n))
+	return types.Cbor.Marshal((*alias)(&cp))
 }
 
 func (n *NonFungibleTokenData) UnmarshalCBOR(data []byte) error {
 	type alias NonFungibleTokenData
-	if err := types.Cbor.Unmarshal(data, (*alias)(n)); err != nil {
-		return err
-	}
-	return types.EnsureVersion(n, n.Version, 1)
+	return types.UnmarshalVersioned(1, data, (*alias)(n), n)
 }
 
 func (n *NonFungibleTokenData) GetCounter() uint64 {
@@ -250,18 +250,16 @@ func (f *FungibleTokenTypeData) GetVersion() types.Version {
 
 func (b *FungibleTokenTypeData) MarshalCBOR() ([]byte, error) {
 	type alias FungibleTokenTypeData
-	if b.Version == 0 {
-		b.Version = b.GetVersion()
+	cp := *b
+	if cp.Version == 0 {
+		cp.Version = 1
 	}
-	return types.Cbor.Marshal((*alias)(b))
+	return types.Cbor.Marshal((*alias)(&cp))
 }
 
 func (b *FungibleTokenTypeData) UnmarshalCBOR(data []byte) error {
 	type alias FungibleTokenTypeData
-	if err := types.Cbor.Unmarshal(data, (*alias)(b)); err != nil {
-		return err
-	}
-	return types.EnsureVersion(b, b.Version, 1)
+	return types.UnmarshalVersioned(1, data, (*alias)(b), b)
 }
 
 func (f *FungibleTokenData) Write(hasher abhash.Hasher) {
@@ -302,16 +300,14 @@ func (f *FungibleTokenData) GetVersion() types.Version {
 
 func (f *FungibleTokenData) MarshalCBOR() ([]byte, error) {
 	type alias FungibleTokenData
-	if f.Version == 0 {
-		f.Version = f.GetVersion()
+	cp := *f
+	if cp.Version == 0 {
+		cp.Version = 1
 	}
-	return types.Cbor.Marshal((*alias)(f))
+	return types.Cbor.Marshal((*alias)(&cp))
 }
 
 func (f *FungibleTokenData) UnmarshalCBOR(data []byte) error {
 	type alias FungibleTokenData
-	if err := types.Cbor.Unmarshal(data, (*alias)(f)); err != nil {
-		return err
-	}
-	return types.EnsureVersion(f, f.Version, 1)
+	return types.UnmarshalVersioned(1, data, (*alias)(f), f)
 }

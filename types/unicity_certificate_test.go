@@ -228,7 +228,7 @@ func TestUnicityCertificate_Verify(t *testing.T) {
 		uc := validUC(t, sid0, &ir0, trHash0, shardConf0Hash)
 		uc.UnicitySeal.Hash = []byte{1, 2, 3}
 		require.EqualError(t, uc.Verify(tb, crypto.SHA256, shardConf0.PartitionID, shardConf0.ShardID, shardConf0Hash),
-			"unicity seal hash 010203 does not match with the root hash of the unicity tree F06B596575FAE5F211C9738A657C55A13D06F7E22CE40F02A4682FDA7C1FD44F")
+			"unicity seal hash 010203 does not match with the root hash of the unicity tree BD0AC73BEA6F2A497A6AECB5DD013BB3700916DB075371F9C8C20A86C4B38D59")
 	})
 }
 
@@ -836,7 +836,7 @@ func Test_UnicityCertificate_Cbor(t *testing.T) {
 			Version:                1,
 			InputRecord:            &InputRecord{Version: 1},
 			TRHash:                 []byte{1, 2, 3, 4, 5},
-			ShardTreeCertificate:   ShardTreeCertificate{Shard: ShardID{}},
+			ShardTreeCertificate:   ShardTreeCertificate{Version: 1, Shard: ShardID{}},
 			UnicityTreeCertificate: &UnicityTreeCertificate{Version: 1},
 			UnicitySeal: &UnicitySeal{
 				Version:    1,
@@ -858,7 +858,7 @@ func Test_UnicityCertificate_Cbor(t *testing.T) {
 		//uc := &UnicityCertificate{InputRecord: &InputRecord{}, TRHash: []byte{1}, UnicityTreeCertificate: &UnicityTreeCertificate{}, UnicitySeal: &UnicitySeal{}}
 		//_ucData, _ := uc.MarshalCBOR()
 		//fmt.Printf("ucData: 0x%X\n", _ucData)
-		ucData, err := hex.Decode([]byte("0xD903EF8701D903F08A010000F6F6F600F600F64101F6824180F6D903F6830100F6D903E9880100000000F6F6F6"))
+		ucData, err := hex.Decode([]byte("0xD998598701D9985A8A010000F6F6F600F600F64101F6D9985B83014180F6D9985C830100F6D9985D880100000000F6F6F6"))
 		require.NoError(t, err)
 
 		uc1 := &UnicityCertificate{}

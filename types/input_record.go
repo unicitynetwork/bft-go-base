@@ -137,18 +137,20 @@ func (x *InputRecord) GetVersion() Version {
 	return 1
 }
 
+func NewInputRecord() *InputRecord {
+	return &InputRecord{Version: 1}
+}
+
 func (x *InputRecord) MarshalCBOR() ([]byte, error) {
 	type alias InputRecord
-	if x.Version == 0 {
-		x.Version = x.GetVersion()
+	cp := *x
+	if cp.Version == 0 {
+		cp.Version = 1
 	}
-	return Cbor.MarshalTaggedValue(InputRecordTag, (*alias)(x))
+	return Cbor.MarshalTaggedValue(InputRecordTag, (*alias)(&cp))
 }
 
 func (x *InputRecord) UnmarshalCBOR(data []byte) error {
 	type alias InputRecord
-	if err := Cbor.UnmarshalTaggedValue(InputRecordTag, data, (*alias)(x)); err != nil {
-		return err
-	}
-	return EnsureVersion(x, x.Version, 1)
+	return UnmarshalTaggedVersioned(InputRecordTag, 1, data, (*alias)(x), x)
 }

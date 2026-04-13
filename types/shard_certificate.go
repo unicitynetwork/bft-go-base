@@ -10,11 +10,39 @@ import (
 
 type ShardTreeCertificate struct {
 	_             struct{} `cbor:",toarray"`
+	Version       Version
 	Shard         ShardID
 	SiblingHashes [][]byte
 }
 
+func NewShardTreeCertificate() ShardTreeCertificate {
+	return ShardTreeCertificate{Version: 1}
+}
+
+func (cert ShardTreeCertificate) GetVersion() Version {
+	if cert.Version > 0 {
+		return cert.Version
+	}
+	return 1
+}
+
+func (cert ShardTreeCertificate) MarshalCBOR() ([]byte, error) {
+	type alias ShardTreeCertificate
+	if cert.Version == 0 {
+		cert.Version = 1
+	}
+	return Cbor.MarshalTaggedValue(ShardTreeCertificateTag, alias(cert))
+}
+
+func (cert *ShardTreeCertificate) UnmarshalCBOR(data []byte) error {
+	type alias ShardTreeCertificate
+	return UnmarshalTaggedVersioned(ShardTreeCertificateTag, 1, data, (*alias)(cert), cert)
+}
+
 func (cert ShardTreeCertificate) IsValid() error {
+	if cert.Version != 1 {
+		return ErrInvalidVersion(cert)
+	}
 	if cnt := uint(len(cert.SiblingHashes)); cnt != cert.Shard.Length() {
 		return fmt.Errorf("shard ID is %d bits but got %d sibling hashes", cert.Shard.Length(), cnt)
 	}
@@ -190,6 +218,7 @@ func (tree ShardTree) Certificate(shardID ShardID) (ShardTreeCertificate, error)
 		return ShardTreeCertificate{}, fmt.Errorf("shard %q is not in the tree", shardID)
 	}
 	return ShardTreeCertificate{
+		Version:       1,
 		Shard:         shardID,
 		SiblingHashes: tree.siblingHashes(shardID),
 	}, nil

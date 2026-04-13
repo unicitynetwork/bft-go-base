@@ -128,12 +128,17 @@ func (x *UnicitySeal) AddToHasher(hasher abhash.Hasher) {
 	hasher.Write(x)
 }
 
+func NewUnicitySeal() *UnicitySeal {
+	return &UnicitySeal{Version: 1}
+}
+
 func (x *UnicitySeal) MarshalCBOR() ([]byte, error) {
 	type alias UnicitySeal
-	if x.Version == 0 {
-		x.Version = x.GetVersion()
+	cp := *x
+	if cp.Version == 0 {
+		cp.Version = 1
 	}
-	return Cbor.MarshalTaggedValue(UnicitySealTag, (*alias)(x))
+	return Cbor.MarshalTaggedValue(UnicitySealTag, (*alias)(&cp))
 }
 
 func (x *UnicitySeal) UnmarshalCBOR(b []byte) (err error) {

@@ -236,20 +236,25 @@ func (pdr *PartitionDescriptionRecord) ExtractUnitType(id UnitID) (uint32, error
 	return v & mask, nil
 }
 
+func NewPartitionDescriptionRecord() *PartitionDescriptionRecord {
+	return &PartitionDescriptionRecord{Version: 1}
+}
+
 func (pdr *PartitionDescriptionRecord) MarshalCBOR() ([]byte, error) {
 	type alias PartitionDescriptionRecord
-	if pdr.Version == 0 {
-		pdr.Version = pdr.GetVersion()
+	cp := *pdr
+	if cp.Version == 0 {
+		cp.Version = 1
 	}
-	return Cbor.MarshalTaggedValue(PartitionDescriptionRecordTag, (*alias)(pdr))
+	return Cbor.MarshalTaggedValue(PartitionDescriptionRecordTag, (*alias)(&cp))
 }
 
 func (pdr *PartitionDescriptionRecord) UnmarshalCBOR(data []byte) error {
 	type alias PartitionDescriptionRecord
-	if err := Cbor.UnmarshalTaggedValue(PartitionDescriptionRecordTag, data, (*alias)(pdr)); err != nil {
+	if err := UnmarshalTaggedVersioned(PartitionDescriptionRecordTag, 1, data, (*alias)(pdr), pdr); err != nil {
 		return fmt.Errorf("failed to unmarshal partition description record: %w", err)
 	}
-	return EnsureVersion(pdr, pdr.Version, 1)
+	return nil
 }
 
 func (pdr *PartitionDescriptionRecord) FindValidator(nodeID string) *NodeInfo {

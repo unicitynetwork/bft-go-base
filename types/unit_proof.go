@@ -235,18 +235,20 @@ func (u *UnitStateProof) GetVersion() Version {
 	return 1
 }
 
+func NewUnitStateProof() *UnitStateProof {
+	return &UnitStateProof{Version: 1}
+}
+
 func (u *UnitStateProof) MarshalCBOR() ([]byte, error) {
 	type alias UnitStateProof
-	if u.Version == 0 {
-		u.Version = u.GetVersion()
+	cp := *u
+	if cp.Version == 0 {
+		cp.Version = 1
 	}
-	return Cbor.MarshalTaggedValue(UnitStateProofTag, (*alias)(u))
+	return Cbor.MarshalTaggedValue(UnitStateProofTag, (*alias)(&cp))
 }
 
 func (u *UnitStateProof) UnmarshalCBOR(data []byte) error {
 	type alias UnitStateProof
-	if err := Cbor.UnmarshalTaggedValue(UnitStateProofTag, data, (*alias)(u)); err != nil {
-		return err
-	}
-	return EnsureVersion(u, u.Version, 1)
+	return UnmarshalTaggedVersioned(UnitStateProofTag, 1, data, (*alias)(u), u)
 }

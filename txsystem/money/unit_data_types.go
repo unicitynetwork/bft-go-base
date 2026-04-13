@@ -38,6 +38,7 @@ func NewUnitData(unitID types.UnitID, unitTypeExtractor types.UnitTypeExtractor)
 
 func NewBillData(value uint64, ownerPredicate []byte) *BillData {
 	return &BillData{
+		Version:        1,
 		Value:          value,
 		OwnerPredicate: ownerPredicate,
 	}
@@ -72,16 +73,14 @@ func (b *BillData) GetVersion() types.Version {
 
 func (b *BillData) MarshalCBOR() ([]byte, error) {
 	type alias BillData
-	if b.Version == 0 {
-		b.Version = b.GetVersion()
+	cp := *b
+	if cp.Version == 0 {
+		cp.Version = 1
 	}
-	return types.Cbor.Marshal((*alias)(b))
+	return types.Cbor.Marshal((*alias)(&cp))
 }
 
 func (b *BillData) UnmarshalCBOR(data []byte) error {
 	type alias BillData
-	if err := types.Cbor.Unmarshal(data, (*alias)(b)); err != nil {
-		return err
-	}
-	return types.EnsureVersion(b, b.Version, 1)
+	return types.UnmarshalVersioned(1, data, (*alias)(b), b)
 }

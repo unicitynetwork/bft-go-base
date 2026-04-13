@@ -516,11 +516,14 @@ func TestBlock_CBOR(t *testing.T) {
 	})
 	t.Run("block with unicity certificate", func(t *testing.T) {
 		uc := &UnicityCertificate{
+			Version: 1,
 			InputRecord: &InputRecord{
-				Version:      1, // if version is not set here, the test fails (despite the fact it's a pointer)
+				Version:      1,
 				Hash:         []byte{1, 1, 1},
 				PreviousHash: []byte{1, 1, 1},
-			}}
+			},
+			ShardTreeCertificate: NewShardTreeCertificate(),
+		}
 		ucBytes, err := (uc).MarshalCBOR()
 		require.NoError(t, err)
 		b := Block{
