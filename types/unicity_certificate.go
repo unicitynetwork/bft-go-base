@@ -23,7 +23,7 @@ type UnicityCertificate struct {
 	UnicitySeal            *UnicitySeal            `json:"unicitySeal"`
 }
 
-func (x *UnicityCertificate) IsValid(partitionID PartitionID, shardConfHash []byte) error {
+func (x *UnicityCertificate) IsValid(partitionID PartitionID, shardID ShardID, shardConfHash []byte) error {
 	if x == nil {
 		return ErrUnicityCertificateIsNil
 	}
@@ -42,7 +42,7 @@ func (x *UnicityCertificate) IsValid(partitionID PartitionID, shardConfHash []by
 	if err := x.UnicityTreeCertificate.IsValid(partitionID); err != nil {
 		return fmt.Errorf("invalid unicity tree certificate: %w", err)
 	}
-	if err := x.ShardTreeCertificate.IsValid(); err != nil {
+	if err := x.ShardTreeCertificate.IsValid(shardID); err != nil {
 		return fmt.Errorf("invalid shard tree certificate: %w", err)
 	}
 	if err := x.UnicitySeal.IsValid(); err != nil {
@@ -51,9 +51,8 @@ func (x *UnicityCertificate) IsValid(partitionID PartitionID, shardConfHash []by
 	return nil
 }
 
-// TODO: verify shardID also
 func (x *UnicityCertificate) Verify(tb RootTrustBase, algorithm crypto.Hash, partitionID PartitionID, shardID ShardID, shardConfHash []byte) error {
-	if err := x.IsValid(partitionID, shardConfHash); err != nil {
+	if err := x.IsValid(partitionID, shardID, shardConfHash); err != nil {
 		return fmt.Errorf("invalid unicity certificate: %w", err)
 	}
 

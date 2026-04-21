@@ -172,7 +172,7 @@ func (b *Block) IsValid(algorithm crypto.Hash, shardConfHash []byte) error {
 	if err != nil {
 		return fmt.Errorf("unicity certificate error: %w", err)
 	}
-	if err := uc.IsValid(b.Header.PartitionID, shardConfHash); err != nil {
+	if err := uc.IsValid(b.Header.PartitionID, b.Header.ShardID, shardConfHash); err != nil {
 		return fmt.Errorf("unicity certificate validation failed: %w", err)
 	}
 	// match block hash to input record

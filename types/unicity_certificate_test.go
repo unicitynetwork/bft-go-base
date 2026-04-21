@@ -68,7 +68,7 @@ func TestUnicityCertificate_IsValid(t *testing.T) {
 		}
 	}
 
-	require.NoError(t, validUC(t).IsValid(partitionID, shardConfHash))
+	require.NoError(t, validUC(t).IsValid(partitionID, ShardID{}, shardConfHash))
 
 	t.Run("UC is nil", func(t *testing.T) {
 		var uc *UnicityCertificate
@@ -83,43 +83,44 @@ func TestUnicityCertificate_IsValid(t *testing.T) {
 		uc.InputRecord = nil
 		require.EqualValues(t, 0, uc.GetRoundNumber())
 		require.Nil(t, uc.GetStateHash())
-		require.ErrorIs(t, uc.IsValid(partitionID, shardConfHash), ErrInputRecordIsNil)
+		require.ErrorIs(t, uc.IsValid(partitionID, ShardID{}, shardConfHash), ErrInputRecordIsNil)
 	})
 
 	t.Run("invalid UnicityTreeCertificate", func(t *testing.T) {
 		uc := validUC(t)
 		uc.UnicityTreeCertificate = nil
-		require.ErrorIs(t, uc.IsValid(partitionID, shardConfHash), ErrUnicityTreeCertificateIsNil)
+		require.ErrorIs(t, uc.IsValid(partitionID, ShardID{}, shardConfHash), ErrUnicityTreeCertificateIsNil)
 	})
 
 	t.Run("invalid unicity seal", func(t *testing.T) {
 		uc := validUC(t)
 		uc.UnicitySeal = nil
-		require.ErrorIs(t, uc.IsValid(partitionID, shardConfHash), ErrUnicitySealIsNil)
+		require.ErrorIs(t, uc.IsValid(partitionID, ShardID{}, shardConfHash), ErrUnicitySealIsNil)
 	})
 
 	t.Run("invalid version", func(t *testing.T) {
 		uc := validUC(t)
 		uc.Version = 0
-		require.EqualError(t, uc.IsValid(partitionID, shardConfHash), `invalid version (type *types.UnicityCertificate)`)
+		require.EqualError(t, uc.IsValid(partitionID, ShardID{}, shardConfHash), `invalid version (type *types.UnicityCertificate)`)
 
 		uc.Version = 2
-		require.EqualError(t, uc.IsValid(partitionID, shardConfHash), `invalid version (type *types.UnicityCertificate)`)
+		require.EqualError(t, uc.IsValid(partitionID, ShardID{}, shardConfHash), `invalid version (type *types.UnicityCertificate)`)
 	})
 
 	t.Run("invalid TRHash", func(t *testing.T) {
 		uc := validUC(t)
 		uc.TRHash = nil
-		require.EqualError(t, uc.IsValid(partitionID, shardConfHash), `invalid TRHash: expected 32 bytes, got 0 bytes`)
+		require.EqualError(t, uc.IsValid(partitionID, ShardID{}, shardConfHash), `invalid TRHash: expected 32 bytes, got 0 bytes`)
 
 		uc.TRHash = make([]byte, 33)
-		require.EqualError(t, uc.IsValid(partitionID, shardConfHash), `invalid TRHash: expected 32 bytes, got 33 bytes`)
+		require.EqualError(t, uc.IsValid(partitionID, ShardID{}, shardConfHash), `invalid TRHash: expected 32 bytes, got 33 bytes`)
 	})
 
 	t.Run("invalid shard tree cert", func(t *testing.T) {
 		uc := validUC(t)
-		uc.ShardTreeCertificate.Shard = ShardID{bits: []byte{0}, length: 1}
-		require.EqualError(t, uc.IsValid(partitionID, shardConfHash), `invalid shard tree certificate: shard ID is 1 bits but got 0 sibling hashes`)
+		sid := ShardID{bits: []byte{0}, length: 1}
+		uc.ShardTreeCertificate.Shard = sid
+		require.EqualError(t, uc.IsValid(partitionID, sid, shardConfHash), `invalid shard tree certificate: shard ID is 1 bits but got 0 sibling hashes`)
 	})
 }
 
@@ -210,7 +211,7 @@ func TestUnicityCertificate_Verify(t *testing.T) {
 	}
 
 	require.NoError(t, validUC(t, sid0, &ir0, trHash0, shardConf0Hash).Verify(tb, crypto.SHA256, shardConf0.PartitionID, shardConf0.ShardID, shardConf0Hash))
-	require.NoError(t, validUC(t, sid1, &ir1, trHash1, shardConf1Hash).Verify(tb, crypto.SHA256, shardConf0.PartitionID, shardConf0.ShardID, shardConf1Hash))
+	require.NoError(t, validUC(t, sid1, &ir1, trHash1, shardConf1Hash).Verify(tb, crypto.SHA256, shardConf1.PartitionID, shardConf1.ShardID, shardConf1Hash))
 
 	t.Run("IsValid", func(t *testing.T) {
 		// check that IsValid is called
