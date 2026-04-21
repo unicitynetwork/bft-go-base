@@ -39,9 +39,12 @@ func (cert *ShardTreeCertificate) UnmarshalCBOR(data []byte) error {
 	return UnmarshalTaggedVersioned(ShardTreeCertificateTag, 1, data, (*alias)(cert), cert)
 }
 
-func (cert ShardTreeCertificate) IsValid() error {
+func (cert ShardTreeCertificate) IsValid(shardID ShardID) error {
 	if cert.Version != 1 {
 		return ErrInvalidVersion(cert)
+	}
+	if !cert.Shard.Equal(shardID) {
+		return fmt.Errorf("invalid shard ID: expected %v, got %v", shardID, cert.Shard)
 	}
 	if cnt := uint(len(cert.SiblingHashes)); cnt != cert.Shard.Length() {
 		return fmt.Errorf("shard ID is %d bits but got %d sibling hashes", cert.Shard.Length(), cnt)
