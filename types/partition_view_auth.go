@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"sync/atomic"
 )
 
 /*
@@ -40,6 +41,11 @@ type AuthenticatedPartitionView struct {
 	// partition path every derived UC carries
 	sealBytes []byte
 	pathBytes []byte
+	// leafIdx indexes the view leaves by shard (built once at authentication), so deriving the
+	// certificate of one shard costs its path depth, not a scan of the view.
+	leafIdx map[string]int
+	// leafProbes counts leaf lookups/visits of Certificate (work metric for tests).
+	leafProbes atomic.Int64
 }
 
 type authOptions struct {
@@ -144,6 +150,10 @@ func AuthenticateView(candidate *PartitionViewV1, enclosingUC *UnicityCertificat
 		partition: partition, scheme: slices.Clone(topo.Scheme), view: view, tree: tree,
 		sealBytes: sealBytes, pathBytes: pathBytes,
 	}
+	av.leafIdx = make(map[string]int, len(view.Leaves))
+	for i := range view.Leaves {
+		av.leafIdx[view.Leaves[i].ShardID.Key()] = i
+	}
 	// the enclosing UC as an independent copy
 	if av.enclosing, err = cloneUC(enclosingUC); err != nil {
 		return nil, err
@@ -225,10 +235,9 @@ func (a *AuthenticatedPartitionView) Topology() PartitionViewTopology {
 
 // Certificate derives the ordinary version 1 unicity certificate of the shard.
 func (a *AuthenticatedPartitionView) Certificate(shard ShardID) (*UnicityCertificate, error) {
-	for i := range a.view.Leaves {
-		if a.view.Leaves[i].ShardID.Equal(shard) {
-			return a.certificate(i)
-		}
+	a.leafProbes.Add(1)
+	if i, ok := a.leafIdx[shard.Key()]; ok {
+		return a.certificate(i)
 	}
 	return nil, fmt.Errorf("shard %q is not in the authenticated view", shard)
 }
