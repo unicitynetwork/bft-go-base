@@ -49,6 +49,7 @@ type (
 
 		// cached signature verifier; private fields are ignored in JSON and CBOR encodings
 		sigVerifier     abcrypto.Verifier
+		sigVerifierErr  error // error of the (one time) verifier initialization, returned by every call
 		sigVerifierInit sync.Once
 	}
 
@@ -159,12 +160,11 @@ func (n *NodeInfo) IsValid() error {
 }
 
 func (n *NodeInfo) SigVerifier() (abcrypto.Verifier, error) {
-	var err error
 	n.sigVerifierInit.Do(func() {
-		n.sigVerifier, err = abcrypto.NewVerifierSecp256k1(n.SigKey)
+		n.sigVerifier, n.sigVerifierErr = abcrypto.NewVerifierSecp256k1(n.SigKey)
 	})
-	if err != nil {
-		return nil, fmt.Errorf("invalid signing key: %w", err)
+	if n.sigVerifierErr != nil {
+		return nil, fmt.Errorf("invalid signing key: %w", n.sigVerifierErr)
 	}
 	return n.sigVerifier, nil
 }

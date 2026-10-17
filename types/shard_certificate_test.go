@@ -3,6 +3,7 @@ package types
 import (
 	"crypto"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -227,4 +228,28 @@ func generateSTInput(scheme ShardingScheme) []ShardTreeInput {
 		)
 	}
 	return out
+}
+
+// CreateShardTree must return an error for an incomplete scheme instead of recursing without end
+// (bft-go-base#12: {"00","01"} was accepted by IsValid).
+func Test_CreateShardTree_IncompleteScheme(t *testing.T) {
+	id0, _ := ShardID{}.Split()
+	id00, id01 := id0.Split()
+	scheme := ShardingScheme{id00, id01}
+	in := []ShardTreeInput{
+		{Shard: id00, IR: &InputRecord{}},
+		{Shard: id01, IR: &InputRecord{}},
+	}
+
+	done := make(chan error, 1)
+	go func() {
+		_, err := CreateShardTree(scheme, in, crypto.SHA256)
+		done <- err
+	}()
+	select {
+	case err := <-done:
+		require.EqualError(t, err, "invalid sharding scheme: scheme does not cover the whole shard tree: nothing after 01")
+	case <-time.After(10 * time.Second):
+		t.Fatal("CreateShardTree did not return for an incomplete scheme")
+	}
 }
