@@ -219,7 +219,20 @@ func TestNilEntries_InTrustBaseAndValidators(t *testing.T) {
 	})
 }
 
-func TestNilEntries_InProofs(t *testing.T) {
+func TestNilEntries_InPartitionViewAndProofs(t *testing.T) {
+	t.Run("view leaf with a null input record", func(t *testing.T) {
+		sid0, sid1 := ShardID{}.Split()
+		v := &PartitionViewV1{Version: 1, PartitionID: 7, Leaves: []PartitionViewLeafV1{
+			{ShardID: sid0, InputRecord: nil, TRHash: bytes.Repeat([]byte{1}, 32), ShardConfHash: bytes.Repeat([]byte{2}, 32)},
+			{ShardID: sid1, InputRecord: nil, TRHash: bytes.Repeat([]byte{1}, 32), ShardConfHash: bytes.Repeat([]byte{2}, 32)},
+		}}
+		topo := PartitionViewTopology{Scheme: ShardingScheme{sid0, sid1}, ShardConfHashes: map[string][]byte{}}
+		require.NotPanics(t, func() {
+			require.Error(t, v.ValidateStructure(7, topo))
+			_, err := v.BuildShardTree(7, topo, crypto.SHA256)
+			require.Error(t, err)
+		})
+	})
 	t.Run("transaction proof chain item", func(t *testing.T) {
 		proof := &TxRecordProof{TxRecord: &TransactionRecord{Version: 1}, TxProof: &TxProof{Version: 1, Chain: []*GenericChainItem{nil}}}
 		require.NotPanics(t, func() { require.Error(t, VerifyTxInclusion(proof, nil, crypto.SHA256)) })

@@ -3,9 +3,9 @@ package crypto
 import (
 	"testing"
 
-	test "github.com/unicitynetwork/bft-go-base/testutils"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
+	test "github.com/unicitynetwork/bft-go-base/testutils"
 )
 
 type SigningTestSuite struct {
@@ -163,8 +163,9 @@ func signAndVerifyNoRecoveryID(t *testing.T, signer Signer, verifier Verifier) {
 
 	sigWithoutRecoveryID := sig[:len(sig)-1]
 
-	err = verifier.VerifyBytes(sigWithoutRecoveryID, data)
-	require.NoError(t, err)
+	// the canonical verifier rejects a signature without recovery ID; the compact contract accepts it
+	require.Error(t, verifier.VerifyBytes(sigWithoutRecoveryID, data))
+	require.NoError(t, verifier.(CompactVerifier).VerifyCompactBytes(sigWithoutRecoveryID, data))
 }
 
 func signAndVerifyBytes(t *testing.T, signer Signer, verifier Verifier) {
@@ -174,4 +175,27 @@ func signAndVerifyBytes(t *testing.T, signer Signer, verifier Verifier) {
 
 	err = verifier.VerifyBytes(sig, data)
 	require.NoError(t, err)
+}
+
+func TestVerifyHashBindsTheRecoveryID(t *testing.T) {
+	signer, err := NewInMemorySecp256K1Signer()
+	require.NoError(t, err)
+	verifier, err := signer.Verifier()
+	require.NoError(t, err)
+	hash := test.RandomBytes(32)
+	sig, err := signer.SignHash(hash)
+	require.NoError(t, err)
+	require.NoError(t, verifier.VerifyHash(sig, hash))
+	for v := 0; v < 256; v++ {
+		mutated := append([]byte(nil), sig...)
+		mutated[64] = byte(v)
+		if byte(v) == sig[64] {
+			require.NoError(t, verifier.VerifyHash(mutated, hash))
+			continue
+		}
+		require.Error(t, verifier.VerifyHash(mutated, hash), "recovery id %d must be rejected", v)
+	}
+	require.Error(t, verifier.VerifyHash(sig[:64], hash), "compact signature is not a canonical signature")
+	require.Error(t, verifier.VerifyHash(append(append([]byte(nil), sig...), 0), hash))
+	require.NoError(t, verifier.(CompactVerifier).VerifyCompactHash(sig[:64], hash))
 }

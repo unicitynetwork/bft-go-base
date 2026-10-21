@@ -31,3 +31,10 @@ type (
 		UnmarshalPubKey() (crypto.PublicKey, error)
 	}
 )
+
+// CompactVerifier is the explicit, separate contract for the 64-byte compact signature r||s, which carries no
+// recovery ID. Verifier.VerifyHash/VerifyBytes accept only canonical 65-byte recoverable signatures.
+type CompactVerifier interface {
+	VerifyCompactBytes(sig []byte, data []byte) error
+	VerifyCompactHash(sig []byte, hash []byte) error
+}

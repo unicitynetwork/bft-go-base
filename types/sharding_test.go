@@ -331,6 +331,7 @@ func Test_ShardingScheme_IsValid(t *testing.T) {
 		emptyID := ShardID{}
 		id0, id1 := emptyID.Split()
 		id00, id01 := id0.Split()
+		_, id11 := id1.Split()
 		var testCases = []struct {
 			scheme ShardingScheme
 			errMsg string
@@ -340,6 +341,11 @@ func Test_ShardingScheme_IsValid(t *testing.T) {
 			{scheme: ShardingScheme{id0, id1, id1}, errMsg: `scheme is not prefix-free: 1 is prefix of 1`},
 			{scheme: ShardingScheme{id00, id01, id0}, errMsg: `scheme is not prefix-free: 0 is prefix of 00`},
 			{scheme: ShardingScheme{id0, id1, emptyID}, errMsg: `scheme may not contain empty shard ID`},
+			{scheme: ShardingScheme{id00, id01}, errMsg: `scheme does not cover the whole shard tree: nothing after 01`},
+			{scheme: ShardingScheme{id0, id00}, errMsg: `scheme is not prefix-free: 0 is prefix of 00`},
+			{scheme: ShardingScheme{id1, id01}, errMsg: `scheme does not cover the whole shard tree: nothing before 01`},
+			{scheme: ShardingScheme{id00, id1}, errMsg: `scheme does not cover the whole shard tree: gap between 00 and 1`},
+			{scheme: ShardingScheme{id0, id11}, errMsg: `scheme does not cover the whole shard tree: gap between 0 and 11`},
 		}
 
 		for i, tc := range testCases {
@@ -358,11 +364,12 @@ func Test_ShardingScheme_IsValid(t *testing.T) {
 		emptyID := ShardID{}
 		id0, id1 := emptyID.Split()
 		id00, id01 := id0.Split()
+		id10, id11 := id1.Split()
 		var testCases = []ShardingScheme{
 			{},
 			{id0, id1},
-			{id00, id01},
 			{id00, id01, id1},
+			{id0, id10, id11},
 		}
 
 		for i, tc := range testCases {
@@ -371,4 +378,51 @@ func Test_ShardingScheme_IsValid(t *testing.T) {
 			}
 		}
 	})
+}
+
+// MastaP's repro (bft-go-base#12): {"00","01"} was accepted and CreateShardTree then never returned.
+func Test_ShardingScheme_IncompleteSchemeRejected(t *testing.T) {
+	var a, b ShardID
+	require.NoError(t, a.UnmarshalText([]byte("0x20"))) // "00"
+	require.NoError(t, b.UnmarshalText([]byte("0x60"))) // "01"
+	scheme := ShardingScheme{a, b}
+	require.EqualError(t, scheme.IsValid(), "scheme does not cover the whole shard tree: nothing after 01")
+
+	_, err := scheme.sortedValid(compareShardIDs)
+	require.Error(t, err)
+	_, err = CanonicalShardOrder(scheme)
+	require.ErrorContains(t, err, "does not cover the whole shard tree")
+}
+
+// IDs longer than a byte and crossing byte boundaries are checked bit by bit.
+func Test_ShardingScheme_IsValid_Completeness_LongIDs(t *testing.T) {
+	// complete scheme with IDs of 9 and 10 bits: 0, 10, 110, ..., 1^8 0, 1^9
+	complete := caterpillarScheme(10)
+	require.NoError(t, complete.IsValid())
+	require.EqualValues(t, 9, complete[len(complete)-1].length)
+
+	// removing any single shard makes it incomplete
+	for i := range complete {
+		incomplete := append(slices.Clone(complete[:i]), complete[i+1:]...)
+		if len(incomplete) == 1 {
+			continue
+		}
+		require.ErrorContains(t, incomplete.IsValid(), "does not cover the whole shard tree", "without %s", complete[i])
+	}
+
+	// all the 2^k IDs of length k are complete, for k across the byte boundary
+	for _, k := range []uint{7, 8, 9} {
+		ids := []ShardID{{}}
+		for l := uint(0); l < k; l++ {
+			var next []ShardID
+			for _, id := range ids {
+				a, b := id.Split()
+				next = append(next, a, b)
+			}
+			ids = next
+		}
+		require.NoError(t, ShardingScheme(ids).IsValid(), "k=%d", k)
+		require.ErrorContains(t, ShardingScheme(ids[:len(ids)-1]).IsValid(), "does not cover", "k=%d", k)
+		require.ErrorContains(t, ShardingScheme(ids[1:]).IsValid(), "does not cover", "k=%d", k)
+	}
 }

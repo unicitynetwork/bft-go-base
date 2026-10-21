@@ -4,8 +4,10 @@ import (
 	"crypto"
 	"fmt"
 	"strconv"
+	"sync"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	abcrypto "github.com/unicitynetwork/bft-go-base/crypto"
@@ -507,4 +509,52 @@ func TestRootTrustBaseV1_Verify(t *testing.T) {
 			}
 		})
 	}
+}
+
+// A bad signing key must make every SigVerifier / VerifySignature call return an error, not only the first one
+// (bft-go-base#12: the later calls returned a nil verifier and VerifySignature panicked).
+func TestNodeInfo_SigVerifier_BadKeyReturnsErrorOnEveryCall(t *testing.T) {
+	n := &NodeInfo{NodeID: "x", SigKey: []byte{1, 2, 3}, Stake: 1}
+	for i := range 3 {
+		v, err := n.SigVerifier()
+		require.EqualError(t, err, "invalid signing key: pubkey must be 33 bytes long, but is 3", "call %d", i)
+		require.Nil(t, v, "call %d", i)
+	}
+
+	tb := &RootTrustBaseV1{RootNodes: []*NodeInfo{{NodeID: "x", SigKey: []byte{1, 2, 3}, Stake: 1}}, QuorumThreshold: 1}
+	data, sig := []byte("data"), make([]byte, 65)
+	var firstErr string
+	for i := range 2 {
+		require.NotPanics(t, func() {
+			_, err := tb.VerifySignature(data, sig, "x")
+			require.ErrorContains(t, err, "invalid signing key: pubkey must be 33 bytes long, but is 3")
+			if i == 0 {
+				firstErr = err.Error()
+			} else {
+				require.EqualError(t, err, firstErr)
+			}
+		}, "call %d", i)
+	}
+	// the same through the quorum check
+	require.NotPanics(t, func() {
+		for range 2 {
+			require.Error(t, tb.VerifyQuorumSignatures(data, map[string]hex.Bytes{"x": sig}))
+		}
+	})
+}
+
+// Concurrent first calls with a bad key all see the error (run with -race).
+func TestNodeInfo_SigVerifier_BadKeyConcurrent(t *testing.T) {
+	n := &NodeInfo{NodeID: "x", SigKey: []byte{1, 2, 3}, Stake: 1}
+	var wg sync.WaitGroup
+	for range 16 {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			v, err := n.SigVerifier()
+			assert.Error(t, err)
+			assert.Nil(t, v)
+		}()
+	}
+	wg.Wait()
 }
